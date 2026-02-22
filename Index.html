@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineVerse — Watch Together</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#07060d;--surface:#0f0e1a;--card:#131222;--card-h:#1b1930;
+  --border:rgba(255,255,255,.06);--border-b:rgba(255,255,255,.12);
+  --gold:#f5a623;--gold-glow:rgba(245,166,35,.25);--gold-dim:rgba(245,166,35,.12);
+  --red:#ff2d55;--blue:#38bdf8;--green:#10b981;
+  --text:#f0eff8;--muted:#7b7a99;--dim:#3a3958;
+  --r:14px;--r2:22px;--nav:68px;
+  --ff-d:'Cormorant Garamond',serif;
+  --ff-u:'Syne',sans-serif;
+  --ff-k:'Noto Sans Arabic',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ff-u);overflow-x:hidden}
+.ku{font-family:var(--ff-k)!important}
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+/* film grain overlay */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size:200px 200px}
+/* ─── UTILITIES ──────────────────────────────────────── */
+.hidden{display:none!important}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}
+.justify-between{justify-content:space-between}.justify-center{justify-content:center}
+.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}
+.w-full{width:100%}.h-full{height:100%}.relative{position:relative}.absolute{position:absolute}
+.overflow-hidden{overflow:hidden}.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pointer{cursor:pointer}
+.glass{background:rgba(15,14,26,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+/* ─── ANIMATIONS ──────────────────────────────────────── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px var(--gold-glow)}50%{box-shadow:0 0 40px var(--gold-glow)}}
+@keyframes starFloat{0%,100%{transform:translateY(0) scale(1);opacity:.6}50%{transform:translateY(-8px) scale(1.1);opacity:1}}
+.anim-fade{animation:fadeIn .5s ease both}
+.anim-slide{animation:slideUp .6s ease both}
+/* ─── AUTH SCREEN ──────────────────────────────────────── */
+#authScreen{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);overflow-y:auto}
+.auth-bg{position:absolute;inset:0;overflow:hidden;z-index:0}
+.auth-bg-film{position:absolute;inset:0;
+  background:linear-gradient(135deg,#0d0822 0%,#07060d 40%,#0a1520 100%)}
+.auth-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+.auth-orb-1{width:600px;height:600px;background:rgba(245,166,35,.08);top:-200px;right:-200px}
+.auth-orb-2{width:400px;height:400px;background:rgba(56,189,248,.06);bottom:-100px;left:-100px}
+.auth-orb-3{width:300px;height:300px;background:rgba(255,45,85,.06);top:30%;left:30%}
+.auth-card{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border-b);
+  border-radius:var(--r2);width:calc(100% - 32px);max-width:460px;padding:40px 36px;
+  box-shadow:0 40px 80px rgba(0,0,0,.6);margin:auto}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--gold),#e8920a);
+  border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+  font-size:28px;box-shadow:0 8px 24px var(--gold-glow)}
+.auth-logo h1{font-family:var(--ff-d);font-size:2.2rem;font-weight:700;
+  background:linear-gradient(135deg,#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{color:var(--muted);font-size:.85rem;margin-top:4px}
+.auth-tabs{display:flex;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;
+  font-size:.9rem;font-weight:600;color:var(--muted);transition:.2s}
+.auth-tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:7px;
+  text-transform:uppercase;letter-spacing:.06em}
+.form-input{width:100%;padding:13px 16px;background:var(--bg);border:1.5px solid var(--border-b);
+  border-radius:10px;color:var(--text);font-family:inherit;font-size:.95rem;
+  transition:.2s;outline:none}
+.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+.form-input::placeholder{color:var(--dim)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 24px;border-radius:10px;font-family:inherit;font-weight:700;
+  font-size:.9rem;cursor:pointer;border:none;transition:.2s;text-decoration:none}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#e8920a);color:#000;
+  box-shadow:0 4px 16px var(--gold-glow)}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 24px var(--gold-glow)}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border-b)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border-b);background:var(--card)}
+.btn-red{background:var(--red);color:#fff}
+.btn-sm{padding:8px 16px;font-size:.82rem;border-radius:8px}
+.btn-icon{width:40px;height:40px;padding:0;border-radius:10px}
+.auth-divider{text-align:center;color:var(--dim);font-size:.8rem;margin:16px 0;position:relative}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:var(--border-b)}
+.auth-divider::before{left:0}.auth-divider::after{right:0}
+.auth-error{background:rgba(255,45,85,.1);border:1px solid rgba(255,45,85,.3);
+  color:#ff8099;border-radius:8px;padding:10px 14px;font-size:.85rem;margin-bottom:14px;display:none}
+/* ─── LANG TOGGLE ──────────────────────────────────────── */
+.lang-toggle{display:flex;align-items:center;gap:4px;background:var(--card);
+  border:1px solid var(--border);border-radius:8px;padding:4px}
+.lang-btn{padding:5px 12px;border-radius:6px;font-size:.8rem;font-weight:700;cursor:pointer;
+  transition:.2s;border:none;background:transparent;color:var(--muted)}
+.lang-btn.active{background:var(--gold);color:#000}
+/* ─── NAVBAR ──────────────────────────────────────── */
+#navbar{position:fixed;top:0;left:0;right:0;height:var(--nav);z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+  transition:background .3s}
+#navbar.scrolled{background:rgba(7,6,13,.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--ff-d);font-size:1.8rem;font-weight:700;cursor:pointer;
+  background:linear-gradient(135deg,#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:7px 14px;border-radius:8px;color:var(--muted);font-size:.88rem;
+  font-weight:600;cursor:pointer;transition:.2s;border:none;background:none}
+.nav-link:hover,.nav-link.active{color:var(--text);background:rgba(255,255,255,.06)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-search{display:flex;align-items:center;gap:8px;background:var(--card);
+  border:1px solid var(--border);border-radius:10px;padding:8px 14px;transition:.2s}
+.nav-search:focus-within{border-color:var(--gold)}
+.nav-search input{background:none;border:none;outline:none;color:var(--text);
+  font-family:inherit;font-size:.88rem;width:180px}
+.nav-search input::placeholder{color:var(--dim)}
+.nav-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#e8920a);
+  display:flex;align-items:center;justify-content:center;font-weight:800;
+  font-size:.9rem;color:#000;cursor:pointer;flex-shrink:0}
+/* ─── HOME PAGE ──────────────────────────────────────── */
+#pageHome{padding-top:var(--nav);min-height:100vh}
+/* hero */
+.hero{position:relative;height:85vh;min-height:500px;display:flex;align-items:flex-end;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center top;
+  transform-origin:center;transition:transform 8s ease}
+.hero-bg::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to right,rgba(7,6,13,.95) 40%,transparent 100%),
+             linear-gradient(to top,rgba(7,6,13,1) 0%,transparent 50%)}
+.hero-content{position:relative;z-index:1;padding:48px 40px;max-width:640px}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold);
+  color:#000;padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+.hero-title{font-family:var(--ff-d);font-size:3.8rem;font-weight:700;line-height:1.1;
+  margin-bottom:14px}
+.hero-meta{display:flex;align-items:center;gap:12px;color:var(--muted);
+  font-size:.88rem;margin-bottom:16px}
+.hero-dot{width:4px;height:4px;border-radius:50%;background:var(--muted)}
+.hero-rating{color:var(--gold);font-weight:700}
+.hero-desc{color:rgba(240,239,248,.7);font-size:.97rem;line-height:1.65;
+  max-width:480px;margin-bottom:28px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.hero-scroll{position:absolute;bottom:0;left:0;right:0;height:80px;
+  background:linear-gradient(to top,var(--bg),transparent)}
+/* content rows */
+.content-section{padding:0 24px 40px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.section-title{font-family:var(--ff-d);font-size:1.6rem;font-weight:600}
+.section-more{color:var(--muted);font-size:.85rem;cursor:pointer;font-weight:600;
+  display:flex;align-items:center;gap:4px;transition:.2s}
+.section-more:hover{color:var(--gold)}
+.row-scroll{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;
+  scrollbar-width:none;-ms-overflow-style:none}
+.row-scroll::-webkit-scrollbar{display:none}
+/* cards */
+.card{flex-shrink:0;width:200px;border-radius:var(--r);overflow:hidden;
+  background:var(--card);border:1px solid var(--border);cursor:pointer;
+  transition:.3s;position:relative}
+.card:hover{transform:translateY(-6px) scale(1.02);border-color:var(--border-b);
+  box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.card-wide{width:280px}
+.card-img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;
+  background:var(--surface)}
+.card-img-wrap{position:relative;overflow:hidden}
+.card-img-wrap::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(7,6,13,.9) 0%,transparent 60%);
+  opacity:0;transition:.3s}
+.card:hover .card-img-wrap::after{opacity:1}
+.card-overlay{position:absolute;bottom:0;left:0;right:0;padding:14px 12px;
+  transform:translateY(100%);transition:.3s;z-index:1}
+.card:hover .card-overlay{transform:translateY(0)}
+.card-play{width:42px;height:42px;border-radius:50%;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.card-play svg{margin-left:3px}
+.card-info{padding:12px 12px 14px}
+.card-title{font-weight:700;font-size:.92rem;margin-bottom:4px;line-height:1.3}
+.card-meta{color:var(--muted);font-size:.8rem;display:flex;align-items:center;gap:6px}
+.card-rating{color:var(--gold);font-weight:700}
+.card-watched-badge{position:absolute;top:8px;right:8px;background:var(--green);
+  color:#fff;padding:3px 8px;border-radius:6px;font-size:.72rem;font-weight:700;
+  display:flex;align-items:center;gap:4px}
+/* continue watching bar */
+.progress-bar{height:3px;background:var(--border-b);border-radius:99px;margin-top:8px;overflow:hidden}
+.progress-fill{height:100%;background:var(--red);border-radius:99px}
+/* ─── PLAYER PAGE ──────────────────────────────────────── */
+#pagePlayer{position:fixed;inset:0;z-index:500;background:var(--bg);
+  display:flex;flex-direction:column}
+.player-header{height:56px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;background:rgba(7,6,13,.9);border-bottom:1px solid var(--border);
+  flex-shrink:0;z-index:10}
+.player-title{font-family:var(--ff-d);font-size:1.2rem;font-weight:600}
+.player-body{flex:1;display:flex;overflow:hidden}
+.player-main{flex:1;display:flex;align-items:center;justify-content:center;
+  background:#000;position:relative}
+#playerIframe{width:100%;height:100%;border:none}
+#playerVideo{width:100%;height:100%;outline:none;background:#000}
+.player-controls{position:absolute;bottom:0;left:0;right:0;padding:20px 24px;
+  background:linear-gradient(to top,rgba(0,0,0,.9),transparent);
+  transform:translateY(0);transition:.3s;opacity:0}
+.player-main:hover .player-controls{opacity:1}
+.player-progress{height:4px;background:rgba(255,255,255,.2);border-radius:99px;
+  cursor:pointer;margin-bottom:14px;position:relative}
+.player-progress-fill{height:100%;background:var(--red);border-radius:99px;pointer-events:none}
+.player-progress-thumb{position:absolute;top:50%;width:14px;height:14px;
+  background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;
+  box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.player-btns{display:flex;align-items:center;gap:16px}
+.player-btn{background:none;border:none;color:#fff;cursor:pointer;padding:4px;
+  transition:.2s;display:flex;align-items:center;justify-content:center}
+.player-btn:hover{color:var(--gold);transform:scale(1.1)}
+.player-time{color:rgba(255,255,255,.7);font-size:.85rem;font-family:monospace;margin-left:auto}
+/* watch party sidebar */
+.party-sidebar{width:340px;display:flex;flex-direction:column;border-left:1px solid var(--border);
+  background:var(--surface);flex-shrink:0;transition:.3s}
+.party-sidebar.closed{width:0;border:none;overflow:hidden}
+.party-header{padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.party-header h3{font-size:1rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.party-room-code{background:var(--bg);border:1px solid var(--border-b);
+  border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+.room-code{font-family:monospace;font-size:1.3rem;font-weight:800;letter-spacing:4px;color:var(--gold)}
+.party-members{padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.party-members h4{font-size:.8rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+.member-list{display:flex;flex-wrap:wrap;gap:8px}
+.member-chip{display:flex;align-items:center;gap:7px;background:var(--card);
+  border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.82rem}
+.member-avatar{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--gold),#e8920a);
+  display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;color:#000;flex-shrink:0}
+.member-mic{width:16px;height:16px;color:var(--muted)}
+.member-mic.on{color:var(--green)}
+/* chat */
+.party-chat{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:12px 18px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{animation:fadeIn .2s ease}
+.chat-msg-header{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.chat-msg-name{font-size:.78rem;font-weight:700;color:var(--gold)}
+.chat-msg-time{font-size:.72rem;color:var(--dim)}
+.chat-msg-text{font-size:.88rem;line-height:1.5;color:rgba(240,239,248,.85)}
+.chat-msg.mine .chat-msg-name{color:var(--blue)}
+.chat-input-wrap{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.chat-input{flex:1;background:var(--bg);border:1px solid var(--border-b);
+  border-radius:8px;padding:9px 12px;color:var(--text);font-family:inherit;
+  font-size:.88rem;outline:none;transition:.2s}
+.chat-input:focus{border-color:var(--gold)}
+/* party voice bar */
+.voice-bar{padding:10px 18px;background:var(--bg);border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-shrink:0}
+.voice-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+  background:var(--card);border:1px solid var(--border);cursor:pointer;
+  font-size:.82rem;font-weight:600;transition:.2s}
+.voice-btn:hover{background:var(--card-h)}
+.voice-btn.active{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:var(--green)}
+.voice-btn.muted{background:rgba(255,45,85,.1);border-color:rgba(255,45,85,.3);color:var(--red)}
+/* ─── PROFILE PAGE ──────────────────────────────────────── */
+#pageProfile{padding-top:var(--nav);min-height:100vh;padding-bottom:60px}
+.profile-hero{background:linear-gradient(to bottom,var(--surface),var(--bg));
+  padding:40px 24px 48px;border-bottom:1px solid var(--border)}
+.profile-card{max-width:800px;margin:0 auto;display:flex;align-items:flex-start;gap:28px}
+.profile-avatar-big{width:88px;height:88px;border-radius:20px;
+  background:linear-gradient(135deg,var(--gold),#e8920a);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;font-weight:800;color:#000;flex-shrink:0;
+  box-shadow:0 8px 24px var(--gold-glow)}
+.profile-name{font-family:var(--ff-d);font-size:2rem;font-weight:700;margin-bottom:4px}
+.profile-email{color:var(--muted);font-size:.9rem;margin-bottom:16px}
+.profile-stats{display:flex;gap:24px}
+.stat{text-align:center}
+.stat-n{font-size:1.6rem;font-weight:800;font-family:var(--ff-d);color:var(--gold)}
+.stat-l{color:var(--muted);font-size:.8rem;margin-top:2px}
+.profile-body{max-width:900px;margin:0 auto;padding:32px 24px}
+.tab-bar{display:flex;gap:4px;background:var(--surface);border-radius:12px;
+  padding:4px;border:1px solid var(--border);margin-bottom:32px;width:fit-content}
+.tab-item{padding:9px 20px;border-radius:9px;font-size:.88rem;font-weight:600;
+  cursor:pointer;color:var(--muted);transition:.2s}
+.tab-item.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+/* watchlist grid */
+.watchlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+/* ─── MODALS ──────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.8);
+  backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--surface);border:1px solid var(--border-b);border-radius:var(--r2);
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 40px 80px rgba(0,0,0,.6);animation:slideUp .35s ease}
+.modal-header{padding:24px 28px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-family:var(--ff-d);font-size:1.6rem;font-weight:600}
+.modal-close{width:36px;height:36px;border-radius:8px;background:var(--card);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--muted);transition:.2s}
+.modal-close:hover{color:var(--text);background:var(--card-h)}
+.modal-body{padding:20px 28px 28px}
+/* content detail modal */
+.modal-detail-bg{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r);
+  margin-bottom:20px;background:var(--card)}
+.detail-title{font-family:var(--ff-d);font-size:1.8rem;font-weight:700;margin-bottom:8px}
+.detail-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  color:var(--muted);font-size:.88rem;margin-bottom:16px}
+.detail-rating{background:var(--gold-dim);color:var(--gold);padding:3px 10px;
+  border-radius:6px;font-weight:700;font-size:.85rem}
+.detail-desc{color:rgba(240,239,248,.75);line-height:1.7;margin-bottom:24px}
+.detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+/* episodes list */
+.episodes-list{display:flex;flex-direction:column;gap:10px;max-height:280px;overflow-y:auto}
+.ep-item{display:flex;align-items:center;gap:12px;background:var(--card);
+  border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+  cursor:pointer;transition:.2s}
+.ep-item:hover{border-color:var(--border-b);background:var(--card-h)}
+.ep-num{font-family:monospace;font-size:.82rem;color:var(--muted);width:30px;flex-shrink:0}
+.ep-title{flex:1;font-size:.9rem;font-weight:600}
+.ep-dur{color:var(--muted);font-size:.82rem;flex-shrink:0}
+.ep-watched{color:var(--green);flex-shrink:0}
+/* join room modal */
+.room-input{font-family:monospace;font-size:1.8rem;font-weight:800;letter-spacing:6px;
+  text-align:center;text-transform:uppercase}
+/* toast */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9998;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border-b);border-radius:10px;
+  padding:12px 18px;font-size:.88rem;display:flex;align-items:center;gap:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideUp .3s ease;pointer-events:auto;
+  max-width:320px}
+.toast.success .toast-dot{background:var(--green)}
+.toast.error .toast-dot{background:var(--red)}
+.toast.info .toast-dot{background:var(--gold)}
+.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+/* loading */
+.spinner{width:24px;height:24px;border:2.5px solid var(--border-b);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+/* ─── SEARCH RESULTS ──────────────────────────────────────── */
+#searchOverlay{position:fixed;top:var(--nav);left:0;right:0;bottom:0;
+  z-index:900;background:rgba(7,6,13,.97);backdrop-filter:blur(10px);
+  padding:32px 24px;overflow-y:auto}
+.search-results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-top:20px}
+/* ─── RESPONSIVE ──────────────────────────────────────── */
+@media(max-width:768px){
+  .hero{height:70vh}.hero-title{font-size:2.4rem}
+  .hero-content{padding:32px 20px}
+  .content-section{padding:0 16px 32px}
+  .party-sidebar{position:fixed;right:0;top:0;bottom:0;z-index:600;
+    border-left:1px solid var(--border-b)}
+  .nav-links{display:none}
+  .nav-search input{width:120px}
+  #navbar{padding:0 16px}
+}
+/* ─── RTL fixes for Kurdish ──────────────────────────────────────── */
+[dir="rtl"] .hero-content{padding-left:0;padding-right:40px}
+[dir="rtl"] .hero-bg::after{
+  background:linear-gradient(to left,rgba(7,6,13,.95) 40%,transparent 100%),
+             linear-gradient(to top,rgba(7,6,13,1) 0%,transparent 50%)}
+[dir="rtl"] .card-play svg{margin-left:0;margin-right:3px}
+[dir="rtl"] .toast-container{right:auto;left:24px}
+[dir="rtl"] .party-sidebar{border-left:none;border-right:1px solid var(--border)}
+/* ─── SKELETON ──────────────────────────────────────── */
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--card-h) 50%,var(--card) 75%);
+  background-size:400px 100%;animation:shimmer 1.5s infinite;border-radius:var(--r)}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ AUTH SCREEN ══════════════ -->
+<div id="authScreen">
+  <div class="auth-bg">
+    <div class="auth-bg-film"></div>
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+  </div>
+  <div class="auth-card anim-fade">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('ku')">کوردی</button>
+      </div>
+    </div>
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🎬</div>
+      <h1>CineVerse</h1>
+      <p id="authTagline">Watch. Share. Experience.</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">
+        <span data-i="signIn">Sign In</span>
+      </div>
+      <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">
+        <span data-i="signUp">Sign Up</span>
+      </div>
+    </div>
+    <div id="authError" class="auth-error"></div>
+    <!-- login form -->
+    <div id="formLogin">
+      <div class="form-group">
+        <label class="form-label" data-i="email">Email</label>
+        <input id="loginEmail" class="form-input" type="email" placeholder="you@example.com" dir="ltr">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i="password">Password</label>
+        <input id="loginPass" class="form-input" type="password" placeholder="••••••••" dir="ltr">
+      </div>
+      <button class="btn btn-gold w-full" style="margin-top:8px" onclick="doLogin()">
+        <span data-i="signIn">Sign In</span>
+        <div class="spinner hidden" id="loginSpinner" style="width:18px;height:18px"></div>
+      </button>
+    </div>
+    <!-- register form -->
+    <div id="formRegister" class="hidden">
+      <div class="form-group">
+        <label class="form-label" data-i="yourName">Your Name</label>
+        <input id="regName" class="form-input" placeholder="John Doe">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i="email">Email</label>
+        <input id="regEmail" class="form-input" type="email" placeholder="you@example.com" dir="ltr">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i="password">Password</label>
+        <input id="regPass" class="form-input" type="password" placeholder="Min 6 characters" dir="ltr">
+      </div>
+      <button class="btn btn-gold w-full" style="margin-top:8px" onclick="doRegister()">
+        <span data-i="createAccount">Create Account</span>
+        <div class="spinner hidden" id="regSpinner" style="width:18px;height:18px"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN APP ══════════════ -->
+<div id="app" class="hidden">
+
+  <!-- NAVBAR -->
+  <nav id="navbar">
+    <div class="nav-logo" onclick="showPage('home')">CineVerse</div>
+    <div class="nav-links">
+      <button class="nav-link active" id="nl-home" onclick="showPage('home');setActiveNav('home')" data-i="home">Home</button>
+      <button class="nav-link" id="nl-movies" onclick="filterContent('movie');setActiveNav('movies')" data-i="movies">Movies</button>
+      <button class="nav-link" id="nl-series" onclick="filterContent('series');setActiveNav('series')" data-i="series">Series</button>
+      <button class="nav-link" id="nl-drama" onclick="filterContent('drama');setActiveNav('drama')" data-i="dramas">Dramas</button>
+    </div>
+    <div class="nav-right">
+      <div class="nav-search">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="searchInput" placeholder="Search..." oninput="onSearch(this.value)" data-i-ph="search">
+      </div>
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('ku')">کوردی</button>
+      </div>
+      <div class="nav-avatar" id="navAvatar" onclick="showPage('profile')"></div>
+    </div>
+  </nav>
+
+  <!-- ── HOME PAGE ── -->
+  <div id="pageHome">
+    <!-- HERO -->
+    <div class="hero" id="heroSection">
+      <div class="hero-bg" id="heroBg"></div>
+      <div class="hero-content anim-slide">
+        <div class="hero-badge" id="heroBadge">⭐ Featured</div>
+        <h1 class="hero-title" id="heroTitle">Loading...</h1>
+        <div class="hero-meta">
+          <span id="heroYear"></span>
+          <div class="hero-dot"></div>
+          <span class="hero-rating" id="heroRating"></span>
+          <div class="hero-dot"></div>
+          <span id="heroGenre"></span>
+        </div>
+        <p class="hero-desc" id="heroDesc"></p>
+        <div class="hero-actions">
+          <button class="btn btn-gold" id="heroPlayBtn" onclick="playHero()">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <span data-i="playNow">Play Now</span>
+          </button>
+          <button class="btn btn-ghost" onclick="openDetailModal(heroFilmId)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span data-i="moreInfo">More Info</span>
+          </button>
+        </div>
+      </div>
+      <div class="hero-scroll"></div>
+    </div>
+
+    <!-- CONTENT ROWS -->
+    <div id="homeRows" style="padding-top:32px"></div>
+  </div>
+
+  <!-- ── PLAYER PAGE ── -->
+  <div id="pagePlayer" class="hidden">
+    <div class="player-header">
+      <button class="btn btn-ghost btn-sm" onclick="closePlayer()" style="gap:6px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        <span data-i="back">Back</span>
+      </button>
+      <div class="player-title" id="playerTitle"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-ghost btn-sm" id="partyToggleBtn" onclick="togglePartySidebar()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span data-i="watchParty">Watch Party</span>
+        </button>
+      </div>
+    </div>
+    <div class="player-body">
+      <div class="player-main" id="playerMain">
+        <iframe id="playerIframe" class="hidden" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <video id="playerVideo" class="hidden" controls></video>
+        <!-- Custom controls overlay for sync (YouTube) -->
+        <div class="player-controls" id="ytControls">
+          <div class="player-progress" id="ytProgress" onclick="ytSeek(event)">
+            <div class="player-progress-fill" id="ytProgressFill"></div>
+            <div class="player-progress-thumb" id="ytProgressThumb"></div>
+          </div>
+          <div class="player-btns">
+            <button class="player-btn" onclick="ytTogglePlay()" id="ytPlayBtn">
+              <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" id="ytPlayIcon"><path d="M5 3l14 9-14 9V3z"/></svg>
+            </button>
+            <span class="player-time" id="ytTimeDisplay">0:00 / 0:00</span>
+          </div>
+        </div>
+      </div>
+      <!-- PARTY SIDEBAR -->
+      <div class="party-sidebar closed" id="partySidebar">
+        <div class="party-header">
+          <h3>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span data-i="watchParty">Watch Party</span>
+          </h3>
+          <div id="partyRoomArea">
+            <!-- shows create/join OR room code -->
+            <div id="partyNoRoom" style="display:flex;gap:8px">
+              <button class="btn btn-gold btn-sm flex-1" onclick="createPartyRoom()">
+                <span data-i="createRoom">Create Room</span>
+              </button>
+              <button class="btn btn-ghost btn-sm flex-1" onclick="openModal('modalJoinRoom')">
+                <span data-i="joinRoom">Join Room</span>
+              </button>
+            </div>
+            <div id="partyInRoom" class="hidden">
+              <div class="party-room-code">
+                <div>
+                  <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px" data-i="roomCode">Room Code</div>
+                  <div class="room-code" id="displayRoomCode"></div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="copyRoomCode()" title="Copy">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- members -->
+        <div class="party-members">
+          <h4 data-i="members">Members</h4>
+          <div class="member-list" id="memberList"></div>
+        </div>
+        <!-- chat -->
+        <div class="party-chat">
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-input-wrap">
+            <input class="chat-input" id="chatInput" placeholder="Say something..." data-i-ph="saySomething"
+              onkeydown="if(event.key==='Enter')sendChatMsg()">
+            <button class="btn btn-gold btn-sm" onclick="sendChatMsg()">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/></svg>
+            </button>
+          </div>
+        </div>
+        <!-- voice -->
+        <div class="voice-bar">
+          <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            <span data-i="joinVoice">Join Voice</span>
+          </button>
+          <div style="flex:1;font-size:.78rem;color:var(--muted)" id="voiceStatus"></div>
+          <button class="voice-btn" id="muteBtn" onclick="toggleMute()" style="display:none">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" id="muteIcon"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE PAGE ── -->
+  <div id="pageProfile" class="hidden">
+    <div class="profile-hero">
+      <div class="profile-card">
+        <div class="profile-avatar-big" id="profileAvatarBig"></div>
+        <div>
+          <div class="profile-name" id="profileName"></div>
+          <div class="profile-email" id="profileEmail"></div>
+          <div class="profile-stats">
+            <div class="stat">
+              <div class="stat-n" id="statWatched">0</div>
+              <div class="stat-l" data-i="watched">Watched</div>
+            </div>
+            <div class="stat">
+              <div class="stat-n" id="statWatchlist">0</div>
+              <div class="stat-l" data-i="myList">My List</div>
+            </div>
+            <div class="stat">
+              <div class="stat-n" id="statParties">0</div>
+              <div class="stat-l" data-i="parties">Parties</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-right:auto"></div><!-- push logout right -->
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="align-self:flex-start">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span data-i="signOut">Sign Out</span>
+        </button>
+      </div>
+    </div>
+    <div class="profile-body">
+      <div class="tab-bar">
+        <div class="tab-item active" onclick="switchProfileTab('watchlist')" data-i="myList">My List</div>
+        <div class="tab-item" onclick="switchProfileTab('watched')" data-i="history">History</div>
+        <div class="tab-item" onclick="switchProfileTab('continue')" data-i="continueWatching">Continue</div>
+      </div>
+      <div id="profileTabContent"></div>
+    </div>
+  </div>
+
+  <!-- SEARCH OVERLAY -->
+  <div id="searchOverlay" class="hidden">
+    <div style="max-width:900px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="font-family:var(--ff-d);font-size:1.6rem" id="searchResultsTitle">Results</h2>
+        <button onclick="closeSearch()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem">✕ Close</button>
+      </div>
+      <div class="search-results-grid" id="searchResults"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- Content Detail Modal -->
+<div class="modal-overlay hidden" id="modalDetail">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-header">
+      <h2 id="detailTitle" class="detail-title"></h2>
+      <div class="modal-close" onclick="closeModal('modalDetail')">✕</div>
+    </div>
+    <div class="modal-body">
+      <img class="modal-detail-bg" id="detailImg" src="" alt="" onerror="this.src=''">
+      <div class="detail-meta">
+        <span class="detail-rating" id="detailRating"></span>
+        <span id="detailYear"></span>
+        <span id="detailType"></span>
+        <span id="detailGenres"></span>
+      </div>
+      <p class="detail-desc" id="detailDesc"></p>
+      <div class="detail-actions">
+        <button class="btn btn-gold" onclick="playFromDetail()">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+          <span data-i="play">Play</span>
+        </button>
+        <button class="btn btn-ghost" id="detailWatchlistBtn" onclick="toggleWatchlist()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+          <span data-i="addToList">Add to List</span>
+        </button>
+        <button class="btn btn-ghost" onclick="openPartyForContent()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span data-i="watchTogether">Watch Together</span>
+        </button>
+      </div>
+      <!-- Episodes (shown for series/drama) -->
+      <div id="detailEpisodes" class="hidden">
+        <h4 style="font-size:.9rem;font-weight:700;margin-bottom:12px;color:var(--muted);
+          text-transform:uppercase;letter-spacing:.06em" data-i="episodes">Episodes</h4>
+        <div class="episodes-list" id="episodesList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Join Room Modal -->
+<div class="modal-overlay hidden" id="modalJoinRoom">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <h2 data-i="joinRoom">Join Room</h2>
+      <div class="modal-close" onclick="closeModal('modalJoinRoom')">✕</div>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:20px" data-i="enterRoomCode">Enter the 6-character room code:</p>
+      <input id="joinCodeInput" class="form-input room-input" maxlength="6" placeholder="ABC123" dir="ltr">
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn btn-gold flex-1" onclick="joinPartyRoom()">
+          <span data-i="join">Join</span>
+        </button>
+        <button class="btn btn-ghost flex-1" onclick="closeModal('modalJoinRoom')" data-i="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Hidden audio elements for voice -->
+<div id="remoteAudios" style="display:none"></div>
+
+<!-- ══════════════ SCRIPTS ══════════════ -->
+<script>
+// ─── i18n strings ──────────────────────────────────────────
+const STRINGS = {
+  en:{
+    home:'Home',movies:'Movies',series:'Series',dramas:'Dramas',
+    signIn:'Sign In',signUp:'Sign Up',signOut:'Sign Out',
+    email:'Email',password:'Password',yourName:'Your Name',createAccount:'Create Account',
+    playNow:'Play Now',moreInfo:'More Info',play:'Play',back:'Back',
+    addToList:'Add to List',removeFromList:'Remove from List',
+    watchTogether:'Watch Together',watchParty:'Watch Party',
+    createRoom:'Create Room',joinRoom:'Join Room',join:'Join',cancel:'Cancel',
+    roomCode:'Room Code',members:'Members',
+    joinVoice:'Join Voice',leaveVoice:'Leave Voice',mute:'Mute',unmute:'Unmute',
+    episodes:'Episodes',episode:'Episode',season:'Season',
+    watched:'Watched',myList:'My List',parties:'Parties',
+    history:'History',continueWatching:'Continue Watching',
+    enterRoomCode:'Enter the 6-character room code:',
+    saySomething:'Say something...',search:'Search...',
+    trending:'Trending Now',continueRow:'Continue Watching',newReleases:'New Releases',
+    topRated:'Top Rated',dramas:'Dramas',
+    addedToList:'Added to your list',removedFromList:'Removed from list',
+    codeCopied:'Room code copied!',youCreatedRoom:'Room created! Share the code.',
+    youJoinedRoom:'Joined the room!',voiceConnected:'Voice connected',
+    tagline:'Watch. Share. Experience.',noResults:'No results found',
+    markWatched:'Mark as Watched',markedWatched:'Marked as watched ✓',
+  },
+  ku:{
+    home:'ماڵەوە',movies:'فیلمەکان',series:'زنجیرەکان',dramas:'دراماکان',
+    signIn:'چوونەژوورەوە',signUp:'تۆمارکردن',signOut:'چوونەدەرەوە',
+    email:'ئیمەیڵ',password:'پاسوۆرد',yourName:'ناوت',createAccount:'دروستکردنی ئەکاونت',
+    playNow:'لێدان',moreInfo:'زانیاری زیاتر',play:'لێدان',back:'گەڕانەوە',
+    addToList:'زیادکردن بۆ لیست',removeFromList:'لابردن لە لیست',
+    watchTogether:'پێکەوە تەماشاکردن',watchParty:'پارتی تەماشاکردن',
+    createRoom:'دروستکردنی ژوور',joinRoom:'چوونەژووری ژوور',join:'بچوو',cancel:'هەڵوەشاندن',
+    roomCode:'کۆدی ژوور',members:'ئەندامان',
+    joinVoice:'بەشداریکردن لە دەنگ',leaveVoice:'جێهێشتنی دەنگ',mute:'دەنگبڕکردن',unmute:'کردنەوەی دەنگ',
+    episodes:'ئەپیزۆدەکان',episode:'ئەپیزۆد',season:'دەور',
+    watched:'تەماشاکرا',myList:'لیستەکەم',parties:'پارتیەکان',
+    history:'مێژوو',continueWatching:'بەردەوامبوون',
+    enterRoomCode:'کۆدی ژووری ٦ پیتی بنووسە:',
+    saySomething:'شتێک بڵێ...',search:'گەڕان...',
+    trending:'بە ترند',continueRow:'بەردەوامبوون',newReleases:'بەرهەمی نوێ',
+    topRated:'باشترین نرخدانەکان',dramas:'دراماکان',
+    addedToList:'زیادکرا بۆ لیستت',removedFromList:'لابرا لە لیست',
+    codeCopied:'کۆدەکە کۆپیکرا!',youCreatedRoom:'ژووری دروستکرا! کۆدەکە هاوبەش بکە.',
+    youJoinedRoom:'بەشداری ژوورەکە کردی!',voiceConnected:'دەنگ پەیوەست بوو',
+    tagline:'تەماشا بکە. هاوبەش بکە. ئەزموون بکە.',noResults:'هیچ ئەنجامێک نەدۆزرایەوە',
+    markWatched:'نیشانکردن وەک تەماشاکرا',markedWatched:'تەماشاکرا نیشاندرا ✓',
+  }
+};
+
+let LANG = 'en';
+function t(key){ return (STRINGS[LANG]||STRINGS.en)[key] || STRINGS.en[key] || key; }
+
+function setLang(l){
+  LANG = l;
+  document.getElementById('htmlRoot').lang = l;
+  document.getElementById('htmlRoot').dir = l==='ku'?'rtl':'ltr';
+  // update all lang buttons
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent.trim()===(l==='en'?'EN':'کوردی'));
+    if(l==='ku') b.closest('.lang-toggle')?.querySelectorAll('.lang-btn').forEach(bb=>{
+      bb.classList.toggle('active', bb.textContent.trim()==='کوردی');
+    });
+  });
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    const isKu = b.textContent.trim()==='کوردی';
+    b.classList.toggle('active', l==='ku'?isKu:!isKu);
+  });
+  document.querySelectorAll('[data-i]').forEach(el=>{
+    const k = el.getAttribute('data-i');
+    const str = t(k);
+    if(str) el.textContent = str;
+  });
+  document.querySelectorAll('[data-i-ph]').forEach(el=>{
+    const k = el.getAttribute('data-i-ph');
+    const str = t(k);
+    if(str) el.placeholder = str;
+  });
+  document.querySelectorAll('.ku-toggle').forEach(el=>el.classList.toggle('ku',l==='ku'));
+  // re-render home rows if available
+  if(typeof renderHome==='function') renderHome();
+  if(typeof refreshHero==='function') refreshHero();
+  document.getElementById('authTagline').textContent = t('tagline');
+}
+
+function t_title(item){ return LANG==='ku' && item.title_ku ? item.title_ku : item.title_en||item.title||''; }
+function t_desc(item){ return LANG==='ku' && item.desc_ku ? item.desc_ku : item.desc_en||item.desc||''; }
+
+// ─── Modal helpers ──────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.add('hidden'); });
+});
+
+// ─── Toast ──────────────────────────────────────────
+function toast(msg, type='info'){
+  const c = document.getElementById('toastContainer');
+  const d = document.createElement('div');
+  d.className=`toast ${type}`;
+  d.innerHTML=`<div class="toast-dot"></div><span>${msg}</span>`;
+  c.appendChild(d);
+  setTimeout(()=>d.remove(), 3500);
+}
+
+// ─── Page navigation ──────────────────────────────────────────
+let currentPage = 'home';
+function showPage(name){
+  ['home','player','profile'].forEach(p=>{
+    const el = document.getElementById('page'+p.charAt(0).toUpperCase()+p.slice(1));
+    if(el) el.classList.toggle('hidden', p!==name);
+  });
+  document.getElementById('searchOverlay').classList.add('hidden');
+  currentPage = name;
+  if(name==='profile') loadProfilePage();
+}
+
+function setActiveNav(name){
+  document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+  const el = document.getElementById('nl-'+name);
+  if(el) el.classList.add('active');
+}
+
+// ─── Scroll navbar ──────────────────────────────────────────
+window.addEventListener('scroll',()=>{
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+window.switchAuthTab = function(tab){
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
+  document.getElementById('formLogin').classList.toggle('hidden',tab!=='login');
+  document.getElementById('formRegister').classList.toggle('hidden',tab!=='register');
+  document.getElementById('authError').style.display='none';
+};
+
+// Stubs for module functions - overwritten once module loads
+// These prevent "not defined" errors if user interacts before module loads
+window.doLogin = window.doRegister = window.doLogout = function(){console.log('Loading...');};
+window.playHero = window.playContent = window.playEpisode = window.closePlayer = function(){};
+window.openDetailModal = window.playFromDetail = window.toggleWatchlist = function(){};
+window.markAsWatched = window.openPartyForContent = function(){};
+window.togglePartySidebar = window.createPartyRoom = window.joinPartyRoom = function(){};
+window.leavePartyRoom = window.copyRoomCode = window.sendChatMsg = function(){};
+window.toggleVoice = window.toggleMute = window.switchProfileTab = function(){};
+window.filterContent = window.refreshHero = window.renderHome = function(){};
+</script>
+
+<script type="module">
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut, updateProfile
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import {
+  getDatabase, ref, set, get, push, onValue, off, update, remove, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const FB = {
+  apiKey:"AIzaSyDYEwAKfZ7v4c2DEW-69aapkDIY4-z-_H0",
+  authDomain:"cineverse-af8a2.firebaseapp.com",
+  databaseURL:"https://cineverse-af8a2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"cineverse-af8a2",
+  storageBucket:"cineverse-af8a2.firebasestorage.app",
+  messagingSenderId:"945160374384",
+  appId:"1:945160374384:web:6c16f2a0a5795497bf8cb5"
+};
+
+const fbApp = getApps().find(a=>a.name==='[DEFAULT]') || initializeApp(FB);
+const auth  = getAuth(fbApp);
+const db    = getDatabase(fbApp);
+
+// ─── STATE ──────────────────────────────────────────
+let currentUser = null;
+let userData = { watchlist:[], watched:{}, continueWatching:{}, partiesJoined:0 };
+let allContent = [];
+let heroFilmId = null;
+let currentRoomId = null;
+let currentContentId = null;
+let currentEpisodeIdx = 0;
+let detailContentId = null;
+let ytPlayer = null;
+let ytReady = false;
+let isSyncing = false;
+let roomListener = null;
+let chatListener = null;
+let membersListener = null;
+let peer = null;
+let localStream = null;
+let peerCalls = {};
+let isMuted = false;
+let voiceActive = false;
+let partySidebarOpen = false;
+
+// expose globals
+window.heroFilmId = null;
+
+// ─── DEMO CONTENT (seeded if Firebase is empty) ──────────────────────────────────────────
+const DEMO_CONTENT = [
+  {
+    id:1,type:'movie',
+    title_en:'Inception',title_ku:'ئینسێپشن',
+    desc_en:'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
+    desc_ku:'دزێک کە سیکرێتی کۆمپانیاکان دەدزێت بەئامێری هاوبەشکردنی خەون، ئەرکی پووچەڵکردنەوەی ئیدیاکان لە مێشکی ئەندامی رێبەریی دەدرێتێ.',
+    year:2010,rating:'8.8',genres:['Sci-Fi','Thriller','Action'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
+    videoUrl:'https://www.youtube.com/embed/YoHD9XEInc0?autoplay=1&enablejsapi=1'
+  },
+  {
+    id:2,type:'movie',
+    title_en:'The Dark Knight',title_ku:'شوالیەی تاریک',
+    desc_en:'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests.',
+    desc_ku:'کاتێک جۆکەر خراپی و کاتاستروفی دەخاتە سەر خەڵکی گۆتام، بەتمان دەبێت یەکێک لە گەورەترین تاقیکردنەوەی رووحی و جەستەیی قبووڵ بکات.',
+    year:2008,rating:'9.0',genres:['Action','Crime','Drama'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/hkBaDkMWbLaf8B1lsWsKX7Ew3Xq.jpg',
+    videoUrl:'https://www.youtube.com/embed/EXeTwQWrcwY?autoplay=1&enablejsapi=1'
+  },
+  {
+    id:3,type:'movie',
+    title_en:'Interstellar',title_ku:'ئینتەرستێلار',
+    desc_en:'A team of explorers travel through a wormhole in space in an attempt to ensure humanity\'s survival.',
+    desc_ku:'تیمێک لە کاشفان لە ڕێگای دەلیزێکی فەزاوە تێپەڕدەن بە هیوای دڵنیاکردنەوەی مانەوەی ئینسانیەت.',
+    year:2014,rating:'8.6',genres:['Sci-Fi','Adventure','Drama'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg',
+    videoUrl:'https://www.youtube.com/embed/zSWdZVtXT7E?autoplay=1&enablejsapi=1'
+  },
+  {
+    id:4,type:'movie',
+    title_en:'Parasite',title_ku:'پارازایت',
+    desc_en:'Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.',
+    desc_ku:'تامعکاری و کۆمەڵایەتی چینی پەیوەندی نوێ دروستکراوەکەی نێوان خێزانی دەوڵەمەند پارک و ئەهڵی بێچارە کیم مەترسیدار دەکات.',
+    year:2019,rating:'8.5',genres:['Thriller','Drama','Comedy'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg',
+    videoUrl:'https://www.youtube.com/embed/5xH0HfJHsaY?autoplay=1&enablejsapi=1'
+  },
+  {
+    id:5,type:'movie',
+    title_en:'Dune: Part One',title_ku:'دیون: بەشی یەکەم',
+    desc_en:'Feature adaptation of Frank Herbert\'s science fiction novel about the son of a noble family entrusted with the protection of the most valuable asset.',
+    desc_ku:'کورتەفیلمی کتێبی زانستی-خەیاڵی فرانک هێربێرت دەربارەی کوڕی خێزانێکی نەجیب کە پارێزگاریی هەرزەکارترین شتی جیهانی دابینکراوەتێ.',
+    year:2021,rating:'8.0',genres:['Sci-Fi','Adventure'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/d5NXSklpcvkCgnJQ3h2l5GBFDl.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/jYEW5xZkZk2WTrdbMGAPFuBqbDc.jpg',
+    videoUrl:'https://www.youtube.com/embed/n9xhJrPXop4?autoplay=1&enablejsapi=1'
+  },
+  {
+    id:6,type:'series',
+    title_en:'Breaking Bad',title_ku:'بریکینگ بەد',
+    desc_en:'A chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine to secure his family\'s future.',
+    desc_ku:'مامۆستایەکی کیمیا کە دیاریکرا بە شێرپەنجەی سنگی ناشیاو، ئامادەکردن و فرۆشتنی مێتامفێتامین دەکات بۆ پارێزگاریی داهاتووی خێزانەکەی.',
+    year:2008,rating:'9.5',genres:['Crime','Drama','Thriller'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg',
+    episodes:[
+      {id:1,title_en:'Pilot',title_ku:'سەرەتا',duration:'58 min',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+      {id:2,title_en:'Cat\'s in the Bag',title_ku:'پشیلە لە تۆڕدایە',duration:'48 min',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+      {id:3,title_en:'...And the Bag\'s in the River',title_ku:'...و تۆڕەکە لە ڕووبارەدایە',duration:'49 min',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+      {id:4,title_en:'Cancer Man',title_ku:'پیاوی شێرپەنجە',duration:'48 min',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+      {id:5,title_en:'Gray Matter',title_ku:'مادەی مزرووی',duration:'49 min',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+    ]
+  },
+  {
+    id:7,type:'drama',
+    title_en:'Squid Game',title_ku:'یاری مارماڵکە',
+    desc_en:'Hundreds of cash-strapped players accept a secret invitation to compete in children\'s games. Inside, a tempting prize awaits — but with deadly high stakes.',
+    desc_ku:'سەدان یاریزان کە پارەیان نییە قبووڵی بانگهێشتنامەیەکی نهێنی دەکەن بۆ بەشداریکردن لە یارییەکانی منداڵان. ژوورەوە، خەڵاتێکی دڵبڕیو چاوەڕدەکرێت — بەڵام لەگەڵ مەترسیی گیانی.',
+    year:2021,rating:'8.0',genres:['Drama','Thriller','Action'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/qw3J9cNeLioOLoR68WX7z79aCdK.jpg',
+    episodes:[
+      {id:1,title_en:'Red Light, Green Light',title_ku:'چراغی سووری، چراغی سەوز',duration:'60 min',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+      {id:2,title_en:'Hell',title_ku:'دۆزەخ',duration:'63 min',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+      {id:3,title_en:'The Man with the Umbrella',title_ku:'پیاوەکە لەگەڵ کوللکە',duration:'57 min',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+      {id:4,title_en:'Stick to the Team',title_ku:'پشت بە تیمەکەت ببەست',duration:'55 min',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+      {id:5,title_en:'A Fair World',title_ku:'جیهانێکی دادپەروەر',duration:'55 min',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+    ]
+  },
+  {
+    id:8,type:'drama',
+    title_en:'Extraordinary Attorney Woo',title_ku:'ئەتتۆرنێی ووی سەیرووعەجێب',
+    desc_en:'A brilliant attorney with autism navigates the legal world and the challenges of human connection in this heartwarming Korean drama.',
+    desc_ku:'ئەتتۆرنێیەکی سەیر کە بەناخۆشی ئۆتیزم دژوار دەکات، دوور و نزیکبوونی جیهانی یاسای و ئاستەنگی پەیوەندیی مرۆیی لەم دراماکوردی گەرمدیلانەیەدا.',
+    year:2022,rating:'8.7',genres:['Drama','Legal','Romance'],
+    thumbnail:'https://image.tmdb.org/t/p/w500/oIkQkEkwfmcG7IGpjXgyHDLxkbA.jpg',
+    backdrop:'https://image.tmdb.org/t/p/w1280/nJUHX3XL5jOcYd0GSMkrKVjvECg.jpg',
+    episodes:[
+      {id:1,title_en:'Extraordinary Attorney Woo',title_ku:'ئەتتۆرنێی ووی سەیرووعەجێب',duration:'66 min',videoUrl:'https://www.youtube.com/embed/tnCa9lcvzDI?autoplay=1&enablejsapi=1'},
+      {id:2,title_en:'Extraordinary Attorney Woo 2',title_ku:'ئەتتۆرنێی ووی سەیرووعەجێب ٢',duration:'64 min',videoUrl:'https://www.youtube.com/embed/tnCa9lcvzDI?autoplay=1&enablejsapi=1'},
+      {id:3,title_en:'The Incident of the Dung Beetle',title_ku:'ڕووداوی مێشەدینگ',duration:'62 min',videoUrl:'https://www.youtube.com/embed/tnCa9lcvzDI?autoplay=1&enablejsapi=1'},
+    ]
+  }
+];
+
+// ─── AUTH ──────────────────────────────────────────
+// switchAuthTab moved to plain script
+
+window.doLogin = async()=>{
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass){showAuthError('Please fill in all fields'); return;}
+  const sp=document.getElementById('loginSpinner');
+  sp.classList.remove('hidden');
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    const msgs={'auth/invalid-credential':'Wrong email or password','auth/user-not-found':'User not found','auth/wrong-password':'Wrong password'};
+    showAuthError(msgs[e.code]||'Login failed');
+  }finally{sp.classList.add('hidden');}
+};
+
+window.doRegister = async()=>{
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  if(!name||!email||!pass){showAuthError('Please fill in all fields'); return;}
+  if(pass.length<6){showAuthError('Password must be at least 6 characters'); return;}
+  const sp=document.getElementById('regSpinner');
+  sp.classList.remove('hidden');
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:name});
+    await set(ref(db,`cv_users/${cred.user.uid}`),{
+      name,email,watchlist:[],watched:{},continueWatching:{},partiesJoined:0,
+      createdAt:Date.now()
+    });
+  }catch(e){
+    const msgs={'auth/email-already-in-use':'Email already in use','auth/weak-password':'Password too weak'};
+    showAuthError(msgs[e.code]||'Registration failed');
+  }finally{sp.classList.add('hidden');}
+};
+
+window.doLogout = async()=>{
+  if(!confirm('Sign out?')) return;
+  leavePartyRoom();
+  await signOut(auth);
+};
+
+function showAuthError(msg){
+  const el=document.getElementById('authError');
+  el.textContent=msg; el.style.display='block';
+}
+
+// ─── AUTH STATE ──────────────────────────────────────────
+onAuthStateChanged(auth, async(user)=>{
+  if(user){
+    currentUser = user;
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('navAvatar').textContent = (user.displayName||user.email||'U').charAt(0).toUpperCase();
+    // load user data
+    const snap = await get(ref(db,`cv_users/${user.uid}`));
+    if(snap.exists()){
+      const d = snap.val();
+      userData = {
+        watchlist: d.watchlist ? (Array.isArray(d.watchlist)?d.watchlist:Object.values(d.watchlist)) : [],
+        watched: d.watched||{},
+        continueWatching: d.continueWatching||{},
+        partiesJoined: d.partiesJoined||0
+      };
+    }
+    initContent();
+    // seed demo content if none
+    const cSnap = await get(ref(db,'cv_content'));
+    if(!cSnap.exists()){
+      const obj={};
+      DEMO_CONTENT.forEach(c=>{obj[c.id]=c;});
+      await set(ref(db,'cv_content'),obj);
+    }
+  } else {
+    currentUser = null;
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+});
+
+// ─── CONTENT ──────────────────────────────────────────
+function initContent(){
+  onValue(ref(db,'cv_content'),snap=>{
+    if(snap.exists()){
+      const raw = snap.val();
+      allContent = Array.isArray(raw)?raw:Object.values(raw);
+    } else {
+      allContent = DEMO_CONTENT;
+    }
+    window.allContent = allContent;
+    renderHome();
+    refreshHero();
+  });
+}
+
+window.renderHome = function(){
+  if(!allContent.length) return;
+  // hero
+  refreshHero();
+  const rows = document.getElementById('homeRows');
+  rows.innerHTML='';
+
+  // continue watching row
+  const contIds = Object.keys(userData.continueWatching||{});
+  const contItems = contIds.map(id=>allContent.find(c=>String(c.id)===String(id))).filter(Boolean);
+  if(contItems.length) renderRow(rows, t('continueRow'), contItems, true);
+
+  // trending
+  renderRow(rows, t('trending'), [...allContent].sort(()=>Math.random()-.5).slice(0,8));
+
+  // movies
+  const movies = allContent.filter(c=>c.type==='movie');
+  if(movies.length) renderRow(rows, t('movies'), movies);
+
+  // series
+  const series = allContent.filter(c=>c.type==='series');
+  if(series.length) renderRow(rows, t('series'), series);
+
+  // dramas
+  const dramas = allContent.filter(c=>c.type==='drama');
+  if(dramas.length) renderRow(rows, t('dramas'), dramas);
+
+  // top rated
+  const top = [...allContent].sort((a,b)=>parseFloat(b.rating||0)-parseFloat(a.rating||0)).slice(0,8);
+  renderRow(rows, t('topRated'), top);
+};
+
+function renderRow(container, title, items, isContinue=false){
+  const sec = document.createElement('div');
+  sec.className = 'content-section anim-fade';
+  const cards = items.map(item=>{
+    const isWatched = isFullyWatched(item);
+    const cont = userData.continueWatching[item.id];
+    const progress = cont ? Math.min(100, (cont.time/cont.total)*100) : 0;
+    return `<div class="card${isContinue?' card-wide':''}" onclick="openDetailModal(${item.id})">
+      <div class="card-img-wrap">
+        <img class="card-img" src="${item.thumbnail||''}" alt="${t_title(item)}"
+          onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--card))'">
+        ${isWatched?`<div class="card-watched-badge"><svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>${t('watched')}</div>`:''}
+        <div class="card-overlay">
+          <div class="card-play">
+            <svg width="16" height="16" fill="#000" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+          </div>
+          <div style="font-size:.78rem;font-weight:600">${t_title(item)}</div>
+        </div>
+      </div>
+      <div class="card-info">
+        <div class="card-title">${t_title(item)}</div>
+        <div class="card-meta">
+          <span>${item.year||''}</span>
+          <span>·</span>
+          <span class="card-rating">★ ${item.rating||''}</span>
+        </div>
+        ${progress>0?`<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  sec.innerHTML=`<div class="section-header">
+    <h2 class="section-title">${title}</h2>
+  </div>
+  <div class="row-scroll">${cards}</div>`;
+  container.appendChild(sec);
+}
+
+function isFullyWatched(item){
+  if(item.type==='movie') return userData.watched[item.id];
+  if(item.episodes && item.episodes.length){
+    return item.episodes.every(ep=>userData.watched[`${item.id}_ep${ep.id}`]);
+  }
+  return false;
+}
+
+window.refreshHero = function(){
+  if(!allContent.length) return;
+  const featured = allContent[0];
+  heroFilmId = featured.id;
+  window.heroFilmId = heroFilmId;
+  const heroBg = document.getElementById('heroBg');
+  heroBg.style.backgroundImage = `url(${featured.backdrop||featured.thumbnail||''})`;
+  document.getElementById('heroTitle').textContent = t_title(featured);
+  document.getElementById('heroYear').textContent = featured.year||'';
+  document.getElementById('heroRating').textContent = `★ ${featured.rating||''}`;
+  document.getElementById('heroGenre').textContent = (featured.genres||[]).join(' · ');
+  document.getElementById('heroDesc').textContent = t_desc(featured);
+};
+
+window.playHero = function(){
+  if(heroFilmId) playContent(heroFilmId);
+};
+
+// ─── FILTER ──────────────────────────────────────────
+window.filterContent = function(type){
+  showPage('home');
+  const rows = document.getElementById('homeRows');
+  rows.innerHTML='';
+  const items = allContent.filter(c=>c.type===type);
+  const labels = {movie:t('movies'),series:t('series'),drama:t('dramas')};
+  renderRow(rows, labels[type]||type, items);
+};
+
+// ─── SEARCH ──────────────────────────────────────────
+let searchTimeout;
+window.onSearch = function(q){
+  clearTimeout(searchTimeout);
+  if(!q.trim()){ closeSearch(); return; }
+  searchTimeout = setTimeout(()=>{
+    const results = allContent.filter(c=>
+      t_title(c).toLowerCase().includes(q.toLowerCase()) ||
+      t_desc(c).toLowerCase().includes(q.toLowerCase())
+    );
+    document.getElementById('searchOverlay').classList.remove('hidden');
+    document.getElementById('searchResultsTitle').textContent = `"${q}" — ${results.length} results`;
+    const grid = document.getElementById('searchResults');
+    if(!results.length){
+      grid.innerHTML=`<div style="grid-column:1/-1;color:var(--muted);padding:32px 0">${t('noResults')}</div>`;
+      return;
+    }
+    grid.innerHTML = results.map(item=>`
+      <div class="card" onclick="openDetailModal(${item.id});closeSearch()">
+        <img class="card-img" src="${item.thumbnail||''}" alt="${t_title(item)}"
+          onerror="this.style.background='linear-gradient(135deg,var(--surface),var(--card))'">
+        <div class="card-info">
+          <div class="card-title">${t_title(item)}</div>
+          <div class="card-meta"><span>${item.year||''}</span><span>·</span><span class="card-rating">★ ${item.rating||''}</span></div>
+        </div>
+      </div>`).join('');
+  }, 300);
+};
+window.closeSearch = ()=>document.getElementById('searchOverlay').classList.add('hidden');
+
+// ─── DETAIL MODAL ──────────────────────────────────────────
+window.openDetailModal = function(id){
+  const item = allContent.find(c=>c.id===id || String(c.id)===String(id));
+  if(!item) return;
+  detailContentId = item.id;
+
+  document.getElementById('detailTitle').textContent = t_title(item);
+  document.getElementById('detailImg').src = item.backdrop||item.thumbnail||'';
+  document.getElementById('detailRating').textContent = `★ ${item.rating||''}`;
+  document.getElementById('detailYear').textContent = item.year||'';
+  const typeLabels={movie:t('movies'),series:t('series'),drama:t('dramas')};
+  document.getElementById('detailType').textContent = typeLabels[item.type]||item.type;
+  document.getElementById('detailGenres').textContent = (item.genres||[]).join(' · ');
+  document.getElementById('detailDesc').textContent = t_desc(item);
+
+  // watchlist button
+  const inList = userData.watchlist.includes(item.id) || userData.watchlist.includes(String(item.id));
+  const wlBtn = document.getElementById('detailWatchlistBtn');
+  wlBtn.innerHTML = inList
+    ? `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>${t('removeFromList')}</span>`
+    : `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg><span>${t('addToList')}</span>`;
+
+  // episodes
+  const epsSection = document.getElementById('detailEpisodes');
+  if(item.episodes && item.episodes.length){
+    epsSection.classList.remove('hidden');
+    document.getElementById('episodesList').innerHTML = item.episodes.map((ep,i)=>{
+      const watched = userData.watched[`${item.id}_ep${ep.id}`];
+      return `<div class="ep-item" onclick="playEpisode(${item.id},${i});closeModal('modalDetail')">
+        <span class="ep-num">E${ep.id}</span>
+        <div>
+          <div class="ep-title">${LANG==='ku'&&ep.title_ku?ep.title_ku:ep.title_en||''}</div>
+          <div style="font-size:.78rem;color:var(--muted)">${ep.duration||''}</div>
+        </div>
+        ${watched?`<div class="ep-watched"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    epsSection.classList.add('hidden');
+  }
+
+  openModal('modalDetail');
+};
+
+window.playFromDetail = ()=>{ if(detailContentId){ playContent(detailContentId); closeModal('modalDetail'); } };
+
+window.toggleWatchlist = async()=>{
+  if(!currentUser||!detailContentId) return;
+  const id = detailContentId;
+  const idx = userData.watchlist.findIndex(i=>String(i)===String(id));
+  if(idx>-1){ userData.watchlist.splice(idx,1); toast(t('removedFromList'),'info'); }
+  else { userData.watchlist.push(id); toast(t('addedToList'),'success'); }
+  await update(ref(db,`cv_users/${currentUser.uid}`),{watchlist:userData.watchlist});
+  openDetailModal(id); // refresh
+};
+
+window.openPartyForContent = ()=>{
+  if(detailContentId){ playContent(detailContentId); closeModal('modalDetail');
+    setTimeout(()=>{ partySidebarOpen=false; togglePartySidebar(); },500); }
+};
+
+// ─── PLAYER ──────────────────────────────────────────
+window.playContent = function(id, epIdx=0){
+  const item = allContent.find(c=>c.id===id||String(c.id)===String(id));
+  if(!item) return;
+  currentContentId = item.id;
+  currentEpisodeIdx = epIdx;
+  const videoUrl = item.episodes ? item.episodes[epIdx]?.videoUrl : item.videoUrl;
+  if(!videoUrl){ toast('No video URL available','error'); return; }
+  document.getElementById('playerTitle').textContent = t_title(item) + (item.episodes?` — E${epIdx+1}`:'');
+  launchPlayer(videoUrl);
+  showPage('player');
+};
+
+window.playEpisode = function(contentId, epIdx){ playContent(contentId, epIdx); };
+
+function launchPlayer(url){
+  const iframe = document.getElementById('playerIframe');
+  const video  = document.getElementById('playerVideo');
+  const isYT = url.includes('youtube.com') || url.includes('youtu.be');
+  if(isYT){
+    iframe.classList.remove('hidden');
+    video.classList.add('hidden');
+    // Load YouTube IFrame API
+    if(!ytReady && !document.getElementById('ytApiScript')){
+      const s=document.createElement('script');
+      s.id='ytApiScript';
+      s.src='https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    }
+    iframe.src = url;
+    iframe.id = 'playerIframe';
+    window.onYouTubeIframeAPIReady = ()=>{
+      ytReady=true;
+      if(typeof ytInitPlayer==='function') ytInitPlayer();
+    };
+  } else {
+    iframe.classList.add('hidden');
+    video.classList.remove('hidden');
+    video.src = url;
+    video.play();
+    // HTML5 video sync listeners
+    video.onplay = ()=>{ if(!isSyncing && currentRoomId) syncPlayerState({isPlaying:true,time:video.currentTime}); };
+    video.onpause = ()=>{ if(!isSyncing && currentRoomId) syncPlayerState({isPlaying:false,time:video.currentTime}); };
+    video.onseeked = ()=>{ if(!isSyncing && currentRoomId) syncPlayerState({isPlaying:!video.paused,time:video.currentTime}); };
+  }
+}
+
+window.closePlayer = function(){
+  const iframe=document.getElementById('playerIframe');
+  const video=document.getElementById('playerVideo');
+  iframe.src='';
+  video.pause(); video.src='';
+  leavePartyRoom();
+  showPage('home');
+};
+
+// ─── WATCH PARTY ──────────────────────────────────────────
+window.togglePartySidebar = function(){
+  partySidebarOpen=!partySidebarOpen;
+  document.getElementById('partySidebar').classList.toggle('closed',!partySidebarOpen);
+};
+
+function genRoomCode(){
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+window.createPartyRoom = async function(){
+  if(!currentUser) return;
+  const code = genRoomCode();
+  currentRoomId = code;
+  const roomData = {
+    code, hostId:currentUser.uid,
+    contentId:currentContentId, episodeIdx:currentEpisodeIdx,
+    playerState:{isPlaying:false,time:0,updatedAt:Date.now(),updatedBy:currentUser.uid},
+    members:{[currentUser.uid]:{name:currentUser.displayName||currentUser.email,uid:currentUser.uid,micOn:false}},
+    chat:[], createdAt:Date.now()
+  };
+  await set(ref(db,`cv_rooms/${code}`),roomData);
+  showPartyInRoom(code);
+  toast(t('youCreatedRoom'),'success');
+  listenToRoom(code);
+  await update(ref(db,`cv_users/${currentUser.uid}`),{partiesJoined:(userData.partiesJoined||0)+1});
+};
+
+window.openJoinModal = ()=>openModal('modalJoinRoom');
+
+window.joinPartyRoom = async function(){
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if(code.length!==6){ toast('Invalid room code','error'); return; }
+  const snap = await get(ref(db,`cv_rooms/${code}`));
+  if(!snap.exists()){ toast('Room not found','error'); return; }
+  currentRoomId = code;
+  const room = snap.val();
+  // join room
+  await update(ref(db,`cv_rooms/${code}/members/${currentUser.uid}`),{
+    name:currentUser.displayName||currentUser.email, uid:currentUser.uid, micOn:false
+  });
+  // load the content
+  currentContentId = room.contentId;
+  currentEpisodeIdx = room.episodeIdx||0;
+  const item = allContent.find(c=>c.id===room.contentId||String(c.id)===String(room.contentId));
+  if(item){
+    const videoUrl = item.episodes ? item.episodes[currentEpisodeIdx]?.videoUrl : item.videoUrl;
+    if(videoUrl){
+      document.getElementById('playerTitle').textContent = t_title(item);
+      launchPlayer(videoUrl);
+    }
+  }
+  closeModal('modalJoinRoom');
+  showPage('player');
+  if(!partySidebarOpen) togglePartySidebar();
+  showPartyInRoom(code);
+  toast(t('youJoinedRoom'),'success');
+  listenToRoom(code);
+};
+
+function showPartyInRoom(code){
+  document.getElementById('partyNoRoom').classList.add('hidden');
+  document.getElementById('partyInRoom').classList.remove('hidden');
+  document.getElementById('displayRoomCode').textContent = code;
+}
+
+window.copyRoomCode = ()=>{
+  navigator.clipboard.writeText(currentRoomId||'');
+  toast(t('codeCopied'),'info');
+};
+
+// ─── ROOM LISTENER ──────────────────────────────────────────
+function listenToRoom(code){
+  // player state
+  if(roomListener){ off(ref(db,`cv_rooms/${code}/playerState`),roomListener); }
+  roomListener = onValue(ref(db,`cv_rooms/${code}/playerState`),snap=>{
+    if(!snap.exists()) return;
+    const state = snap.val();
+    if(state.updatedBy === currentUser.uid) return; // own update
+    applyRemotePlayerState(state);
+  });
+  // members
+  if(membersListener){ off(ref(db,`cv_rooms/${code}/members`),membersListener); }
+  membersListener = onValue(ref(db,`cv_rooms/${code}/members`),snap=>{
+    if(!snap.exists()) return;
+    const members = Object.values(snap.val());
+    renderMembers(members);
+    if(voiceActive){ connectToNewMembers(members); }
+  });
+  // chat
+  if(chatListener){ off(ref(db,`cv_rooms/${code}/chat`),chatListener); }
+  chatListener = onValue(ref(db,`cv_rooms/${code}/chat`),snap=>{
+    if(!snap.exists()) return;
+    const msgs = Object.values(snap.val());
+    renderChatMessages(msgs);
+  });
+}
+
+function applyRemotePlayerState(state){
+  isSyncing=true;
+  const video=document.getElementById('playerVideo');
+  const iframe=document.getElementById('playerIframe');
+  const isYT = iframe && !iframe.classList.contains('hidden');
+  if(isYT){
+    // YouTube sync via postMessage
+    const msg = state.isPlaying
+      ? JSON.stringify({event:'command',func:'playVideo',args:[]})
+      : JSON.stringify({event:'command',func:'pauseVideo',args:[]});
+    iframe.contentWindow?.postMessage(msg,'*');
+    // seek
+    const seekMsg = JSON.stringify({event:'command',func:'seekTo',args:[state.time, true]});
+    iframe.contentWindow?.postMessage(seekMsg,'*');
+  } else if(video){
+    if(Math.abs(video.currentTime - state.time) > 2) video.currentTime = state.time;
+    if(state.isPlaying && video.paused) video.play();
+    else if(!state.isPlaying && !video.paused) video.pause();
+  }
+  setTimeout(()=>isSyncing=false, 800);
+}
+
+function syncPlayerState(state){
+  if(!currentRoomId||!currentUser) return;
+  update(ref(db,`cv_rooms/${currentRoomId}/playerState`),{
+    ...state, updatedAt:Date.now(), updatedBy:currentUser.uid
+  });
+}
+
+// ─── CHAT ──────────────────────────────────────────
+window.sendChatMsg = async function(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text || !currentRoomId || !currentUser) return;
+  input.value='';
+  await push(ref(db,`cv_rooms/${currentRoomId}/chat`),{
+    uid:currentUser.uid,
+    name:currentUser.displayName||currentUser.email||'User',
+    text, time:Date.now()
+  });
+};
+
+function renderChatMessages(msgs){
+  const c = document.getElementById('chatMessages');
+  c.innerHTML = msgs.sort((a,b)=>a.time-b.time).map(m=>{
+    const mine = m.uid===currentUser?.uid;
+    const d = new Date(m.time);
+    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div class="chat-msg${mine?' mine':''}">
+      <div class="chat-msg-header">
+        <span class="chat-msg-name">${m.name||'User'}</span>
+        <span class="chat-msg-time">${time}</span>
+      </div>
+      <div class="chat-msg-text">${escHtml(m.text)}</div>
+    </div>`;
+  }).join('');
+  c.scrollTop = c.scrollHeight;
+}
+
+function renderMembers(members){
+  document.getElementById('memberList').innerHTML = members.map(m=>`
+    <div class="member-chip">
+      <div class="member-avatar">${(m.name||'?').charAt(0).toUpperCase()}</div>
+      <span style="max-width:80px" class="truncate">${m.name||'User'}</span>
+      <svg class="member-mic${m.micOn?' on':''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      </svg>
+    </div>`).join('');
+}
+
+async function leavePartyRoom(){
+  if(!currentRoomId || !currentUser) return;
+  await remove(ref(db,`cv_rooms/${currentRoomId}/members/${currentUser.uid}`));
+  if(roomListener){ off(ref(db,`cv_rooms/${currentRoomId}/playerState`),roomListener); roomListener=null; }
+  if(chatListener){ off(ref(db,`cv_rooms/${currentRoomId}/chat`),chatListener); chatListener=null; }
+  if(membersListener){ off(ref(db,`cv_rooms/${currentRoomId}/members`),membersListener); membersListener=null; }
+  currentRoomId=null;
+  document.getElementById('partyNoRoom').classList.remove('hidden');
+  document.getElementById('partyInRoom').classList.add('hidden');
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('memberList').innerHTML='';
+  stopVoice();
+}
+
+// ─── VOICE CHAT (PeerJS) ──────────────────────────────────────────
+window.toggleVoice = async function(){
+  if(!voiceActive){ await startVoice(); }
+  else { stopVoice(); }
+};
+
+async function startVoice(){
+  if(!currentRoomId||!currentUser){ toast('Join a room first','error'); return; }
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    const peerId = `cv_${currentRoomId}_${currentUser.uid.substring(0,8)}`;
+    peer = new Peer(peerId,{debug:0});
+    peer.on('open',async()=>{
+      voiceActive=true;
+      isMuted=false;
+      document.getElementById('voiceBtn').className='voice-btn active';
+      document.getElementById('voiceBtn').innerHTML=`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg><span>${t('leaveVoice')}</span>`;
+      document.getElementById('muteBtn').style.display='flex';
+      document.getElementById('voiceStatus').textContent=t('voiceConnected');
+      // update mic status in Firebase
+      await update(ref(db,`cv_rooms/${currentRoomId}/members/${currentUser.uid}`),{micOn:true});
+      // connect to existing members
+      const snap = await get(ref(db,`cv_rooms/${currentRoomId}/members`));
+      if(snap.exists()){
+        Object.keys(snap.val()).forEach(uid=>{
+          if(uid!==currentUser.uid){
+            const remotePeerId=`cv_${currentRoomId}_${uid.substring(0,8)}`;
+            const call=peer.call(remotePeerId,localStream);
+            call.on('stream',s=>addRemoteStream(s,uid));
+            peerCalls[uid]=call;
+          }
+        });
+      }
+    });
+    peer.on('call',call=>{
+      call.answer(localStream);
+      call.on('stream',s=>addRemoteStream(s,call.peer));
+    });
+    peer.on('error',e=>{ toast('Voice error: '+e.type,'error'); stopVoice(); });
+  }catch(e){
+    toast('Microphone access denied','error');
+  }
+}
+
+function stopVoice(){
+  voiceActive=false;
+  if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+  Object.values(peerCalls).forEach(c=>c.close());
+  peerCalls={};
+  if(peer){ peer.destroy(); peer=null; }
+  document.getElementById('remoteAudios').innerHTML='';
+  document.getElementById('voiceBtn').className='voice-btn';
+  document.getElementById('voiceBtn').innerHTML=`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg><span>${t('joinVoice')}</span>`;
+  document.getElementById('muteBtn').style.display='none';
+  document.getElementById('voiceStatus').textContent='';
+  if(currentRoomId&&currentUser) update(ref(db,`cv_rooms/${currentRoomId}/members/${currentUser.uid}`),{micOn:false}).catch(()=>{});
+}
+
+function addRemoteStream(stream, id){
+  const existing = document.getElementById('audio_'+id);
+  if(existing) return;
+  const audio = document.createElement('audio');
+  audio.id = 'audio_'+id;
+  audio.srcObject = stream;
+  audio.autoplay = true;
+  document.getElementById('remoteAudios').appendChild(audio);
+}
+
+window.toggleMute = function(){
+  if(!localStream) return;
+  isMuted=!isMuted;
+  localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted);
+  const btn=document.getElementById('muteBtn');
+  btn.className = 'voice-btn'+(isMuted?' muted':'');
+  btn.innerHTML = isMuted
+    ? `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8"/></svg><span>${t('unmute')}</span>`
+    : `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg><span>${t('mute')}</span>`;
+  if(currentRoomId&&currentUser) update(ref(db,`cv_rooms/${currentRoomId}/members/${currentUser.uid}`),{micOn:!isMuted}).catch(()=>{});
+};
+
+function connectToNewMembers(members){
+  if(!peer||!localStream||!voiceActive) return;
+  members.forEach(m=>{
+    if(m.uid!==currentUser?.uid && !peerCalls[m.uid]){
+      const remotePeerId=`cv_${currentRoomId}_${m.uid.substring(0,8)}`;
+      try{
+        const call=peer.call(remotePeerId,localStream);
+        call.on('stream',s=>addRemoteStream(s,m.uid));
+        peerCalls[m.uid]=call;
+      }catch(e){}
+    }
+  });
+}
+
+// ─── PROFILE ──────────────────────────────────────────
+function loadProfilePage(){
+  if(!currentUser) return;
+  document.getElementById('profileAvatarBig').textContent = (currentUser.displayName||currentUser.email||'U').charAt(0).toUpperCase();
+  document.getElementById('profileName').textContent = currentUser.displayName||'User';
+  document.getElementById('profileEmail').textContent = currentUser.email||'';
+  const watchedCount = Object.keys(userData.watched||{}).length;
+  const wlCount = (userData.watchlist||[]).length;
+  document.getElementById('statWatched').textContent = watchedCount;
+  document.getElementById('statWatchlist').textContent = wlCount;
+  document.getElementById('statParties').textContent = userData.partiesJoined||0;
+  switchProfileTab('watchlist');
+}
+
+window.switchProfileTab = function(tab){
+  document.querySelectorAll('.tab-item').forEach((el,i)=>{
+    const tabs=['watchlist','watched','continue'];
+    el.classList.toggle('active', tabs[i]===tab);
+  });
+  const content = document.getElementById('profileTabContent');
+  if(tab==='watchlist'){
+    const items = (userData.watchlist||[]).map(id=>allContent.find(c=>c.id===id||String(c.id)===String(id))).filter(Boolean);
+    if(!items.length){ content.innerHTML=`<div style="color:var(--muted);padding:24px 0">${t('noResults')}</div>`; return; }
+    content.innerHTML=`<div class="watchlist-grid">${items.map(item=>`
+      <div class="card" onclick="openDetailModal(${item.id})">
+        <img class="card-img" src="${item.thumbnail||''}" alt="" onerror="this.style.background='var(--card)'">
+        <div class="card-info"><div class="card-title">${t_title(item)}</div></div>
+      </div>`).join('')}</div>`;
+  } else if(tab==='watched'){
+    const watchedIds = Object.keys(userData.watched||{});
+    const items = [...new Set(watchedIds.map(k=>k.split('_ep')[0]))].map(id=>allContent.find(c=>String(c.id)===String(id))).filter(Boolean);
+    if(!items.length){ content.innerHTML=`<div style="color:var(--muted);padding:24px 0">${t('noResults')}</div>`; return; }
+    content.innerHTML=`<div class="watchlist-grid">${items.map(item=>`
+      <div class="card" onclick="openDetailModal(${item.id})">
+        <div class="card-img-wrap"><img class="card-img" src="${item.thumbnail||''}" alt="" onerror="this.style.background='var(--card)'">
+        <div class="card-watched-badge"><svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>${t('watched')}</div></div>
+        <div class="card-info"><div class="card-title">${t_title(item)}</div></div>
+      </div>`).join('')}</div>`;
+  } else {
+    const contItems = Object.keys(userData.continueWatching||{}).map(id=>allContent.find(c=>String(c.id)===String(id))).filter(Boolean);
+    if(!contItems.length){ content.innerHTML=`<div style="color:var(--muted);padding:24px 0">${t('noResults')}</div>`; return; }
+    content.innerHTML=`<div class="watchlist-grid">${contItems.map(item=>{
+      const cont = userData.continueWatching[item.id];
+      const progress = cont ? Math.min(100,(cont.time/cont.total)*100) : 0;
+      return `<div class="card" onclick="playContent(${item.id},${cont?.epIdx||0})">
+        <img class="card-img" src="${item.thumbnail||''}" alt="" onerror="this.style.background='var(--card)'">
+        <div class="card-info"><div class="card-title">${t_title(item)}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div></div>
+      </div>`;}).join('')}</div>`;
+  }
+};
+
+// ─── UTILS ──────────────────────────────────────────
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// init lang
+setLang('en');
+// ensure all data-i strings initialized
+setTimeout(()=>setLang(LANG), 100);
+</script>
+</body>
+</html>
