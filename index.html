@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineVerse — Watch Together</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#07060d;--surf:#0f0e1a;--card:#131222;--cardh:#1b1930;
+  --bdr:rgba(255,255,255,.06);--bdrb:rgba(255,255,255,.13);
+  --gold:#f5a623;--gglow:rgba(245,166,35,.25);--gdim:rgba(245,166,35,.12);
+  --red:#ff2d55;--blue:#38bdf8;--green:#10b981;
+  --text:#f0eff8;--muted:#7b7a99;--dim:#3a3958;
+  --r:12px;--r2:20px;--nav:60px;
+  --fd:'Cormorant Garamond',serif;--fu:'Syne',sans-serif;--fk:'Noto Sans Arabic',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fu);overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--surf)}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:4px}
+.hidden{display:none!important}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.afu{animation:fadeUp .4s ease both}
+/* ── SPINNER ── */
+.sp{width:22px;height:22px;border:2.5px solid var(--bdrb);border-top-color:var(--gold);border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
+/* ── LOAD SCREEN ── */
+#loadScr{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .35s}
+#loadScr.out{opacity:0;pointer-events:none}
+.load-logo{font-family:var(--fd);font-size:2.8rem;font-weight:700;background:linear-gradient(135deg,#fff 30%,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+/* ── AUTH ── */
+#authWrap{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.auth-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+.ao1{width:480px;height:480px;background:rgba(245,166,35,.07);top:-160px;right:-120px}
+.ao2{width:340px;height:340px;background:rgba(56,189,248,.05);bottom:-80px;left:-80px}
+.auth-card{position:relative;z-index:1;background:var(--surf);border:1px solid var(--bdrb);border-radius:var(--r2);width:100%;max-width:420px;padding:32px 28px;box-shadow:0 28px 56px rgba(0,0,0,.6)}
+.auth-logo{text-align:center;margin-bottom:26px}
+.auth-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--gold),#e8920a);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:24px;box-shadow:0 6px 18px var(--gglow)}
+.auth-logo h1{font-family:var(--fd);font-size:2rem;font-weight:700;background:linear-gradient(135deg,#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{color:var(--muted);font-size:.82rem;margin-top:3px}
+.auth-tabs{display:flex;background:var(--bg);border-radius:9px;padding:3px;margin-bottom:22px;gap:3px}
+.auth-tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;font-size:.86rem;font-weight:700;color:var(--muted);transition:.2s;border:none;background:none;font-family:inherit}
+.auth-tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.form-group{margin-bottom:13px}
+.form-label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.07em}
+.form-input{width:100%;padding:11px 13px;background:var(--bg);border:1.5px solid var(--bdrb);border-radius:9px;color:var(--text);font-family:inherit;font-size:.92rem;outline:none;transition:.2s;-webkit-appearance:none}
+.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gdim)}
+.form-input::placeholder{color:var(--dim)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border-radius:9px;font-family:inherit;font-weight:700;font-size:.86rem;cursor:pointer;border:none;transition:.2s;text-decoration:none;-webkit-appearance:none}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#e8920a);color:#000;box-shadow:0 4px 14px var(--gglow)}
+.btn-gold:hover,.btn-gold:active{transform:translateY(-1px);box-shadow:0 6px 20px var(--gglow)}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--bdrb)}
+.btn-ghost:hover,.btn-ghost:active{color:var(--text);background:var(--card)}
+.btn-sm{padding:7px 13px;font-size:.78rem;border-radius:8px}
+.btn-full{width:100%}
+.auth-msg{border-radius:8px;padding:9px 13px;font-size:.82rem;margin-bottom:10px;display:none}
+.auth-msg.err{background:rgba(255,45,85,.1);border:1px solid rgba(255,45,85,.35);color:#ff7090}
+.auth-msg.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.35);color:#34d399}
+.lang-toggle{display:flex;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:3px;gap:2px}
+.lang-btn{padding:5px 10px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:.2s;font-family:inherit}
+.lang-btn.active{background:var(--gold);color:#000}
+/* ── NAV ── */
+#navbar{position:fixed;top:0;left:0;right:0;height:var(--nav);z-index:400;display:flex;align-items:center;padding:0 14px;gap:10px;transition:background .3s}
+#navbar.scrolled{background:rgba(7,6,13,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr)}
+.nav-logo{font-family:var(--fd);font-size:1.6rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0}
+.nav-links{display:none}
+@media(min-width:640px){.nav-links{display:flex;gap:2px}}
+.nav-link{padding:6px 11px;border-radius:7px;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:.2s;border:none;background:none;font-family:inherit}
+.nav-link:hover,.nav-link.active{color:var(--text);background:rgba(255,255,255,.07)}
+.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.nav-srch{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--bdr);border-radius:9px;padding:7px 11px;transition:.2s;flex:1;max-width:220px}
+.nav-srch:focus-within{border-color:var(--gold)}
+.nav-srch input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:.82rem;width:100%;min-width:60px}
+.nav-srch input::placeholder{color:var(--dim)}
+.nav-av{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--gold),#e8920a);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;color:#000;cursor:pointer;flex-shrink:0}
+/* ── HOME ── */
+#pageHome{padding-top:var(--nav);min-height:100vh}
+.hero{position:relative;height:75vh;min-height:380px;max-height:600px;display:flex;align-items:flex-end;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:background-image .5s}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(7,6,13,.93) 35%,transparent 100%),linear-gradient(to top,rgba(7,6,13,1) 0%,transparent 60%)}
+.hero-content{position:relative;z-index:1;padding:28px 16px;max-width:580px}
+.hero-badge{display:inline-flex;align-items:center;gap:5px;background:var(--gold);color:#000;padding:3px 10px;border-radius:5px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.hero-title{font-family:var(--fd);font-size:clamp(1.8rem,6vw,3.2rem);font-weight:700;line-height:1.1;margin-bottom:8px}
+.hero-meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.82rem;margin-bottom:10px;flex-wrap:wrap}
+.hero-dot{width:3px;height:3px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.hero-rating{color:var(--gold);font-weight:700}
+.hero-desc{color:rgba(240,239,248,.65);font-size:.88rem;line-height:1.6;max-width:440px;margin-bottom:18px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hero-fade{position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,var(--bg),transparent)}
+/* ── ROWS ── */
+.csec{padding:0 14px 28px}
+.sec-hdr{display:flex;align-items:center;margin-bottom:12px}
+.sec-title{font-family:var(--fd);font-size:1.35rem;font-weight:600}
+.row-sc{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.row-sc::-webkit-scrollbar{display:none}
+/* ── CARDS ── */
+.card{flex-shrink:0;width:140px;border-radius:var(--r);overflow:hidden;background:var(--card);border:1px solid var(--bdr);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative}
+.card:active{transform:scale(.97)}
+@media(min-width:640px){.card{width:170px}.card:hover{transform:translateY(-5px) scale(1.02);border-color:var(--bdrb);box-shadow:0 16px 32px rgba(0,0,0,.5)}}
+.card-wide{width:200px}
+@media(min-width:640px){.card-wide{width:250px}}
+.cimg{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:var(--surf)}
+.cimg-wrap{position:relative;overflow:hidden}
+.cov{position:absolute;inset:0;background:linear-gradient(to top,rgba(7,6,13,.9),transparent 60%);opacity:0;transition:.2s;display:flex;flex-direction:column;justify-content:flex-end;padding:10px}
+.card:hover .cov,.card:focus .cov{opacity:1}
+.cplay{width:34px;height:34px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:5px;flex-shrink:0}
+.cplay svg{margin-left:2px}
+.cinfo{padding:8px 8px 10px}
+.ctitle{font-weight:700;font-size:.82rem;margin-bottom:2px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmeta{color:var(--muted);font-size:.72rem;display:flex;align-items:center;gap:4px}
+.crating{color:var(--gold);font-weight:700}
+.wbadge{position:absolute;top:6px;right:6px;background:var(--green);color:#fff;padding:2px 6px;border-radius:5px;font-size:.66rem;font-weight:700}
+.pbar{height:3px;background:var(--bdrb);border-radius:3px;margin-top:6px;overflow:hidden}
+.pfill{height:100%;background:var(--red);border-radius:3px}
+/* ── PLAYER ── */
+#pagePlayer{position:fixed;inset:0;z-index:600;background:#000;display:flex;flex-direction:column}
+.pl-hdr{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(7,6,13,.92);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.pl-title{font-family:var(--fd);font-size:1rem;font-weight:600;flex:1;text-align:center;margin:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-body{flex:1;display:flex;overflow:hidden}
+.pl-main{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center}
+#pIframe{width:100%;height:100%;border:none}
+#pVideo{width:100%;height:100%;outline:none;background:#000}
+/* ── PARTY SIDEBAR ── */
+.pside{width:300px;display:flex;flex-direction:column;border-left:1px solid var(--bdr);background:var(--surf);flex-shrink:0;transition:width .25s}
+.pside.closed{width:0;border:none;overflow:hidden}
+@media(max-width:640px){.pside{position:fixed;right:0;top:0;bottom:0;z-index:700;width:280px;box-shadow:-6px 0 28px rgba(0,0,0,.5)}}
+.pside-hdr{padding:12px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.pside-hdr h3{font-size:.9rem;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.room-code-box{background:var(--bg);border:1px solid var(--bdrb);border-radius:9px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between}
+.room-code{font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:4px;color:var(--gold)}
+.pmembers{padding:9px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.pmembers h4{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:7px}
+.mlist{display:flex;flex-wrap:wrap;gap:5px}
+.mchip{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:4px 7px;font-size:.76rem}
+.mav{width:20px;height:20px;border-radius:4px;background:linear-gradient(135deg,var(--gold),#e8920a);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#000;flex-shrink:0}
+.mmic{color:var(--muted)}.mmic.on{color:var(--green)}
+.pchat{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.cmsgs{flex:1;overflow-y:auto;padding:9px 14px;display:flex;flex-direction:column;gap:7px;min-height:0}
+.cmsg{animation:fadeUp .15s ease}
+.cmsg-hdr{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.cname{font-size:.72rem;font-weight:700;color:var(--gold)}
+.ctime{font-size:.67rem;color:var(--dim)}
+.ctext{font-size:.82rem;line-height:1.5;color:rgba(240,239,248,.82)}
+.cmsg.mine .cname{color:var(--blue)}
+.cinput-wrap{padding:9px 12px;border-top:1px solid var(--bdr);display:flex;gap:6px;flex-shrink:0}
+.cinput{flex:1;background:var(--bg);border:1px solid var(--bdrb);border-radius:7px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;transition:.2s}
+.cinput:focus{border-color:var(--gold)}
+.vbar{padding:8px 14px;background:var(--bg);border-top:1px solid var(--bdr);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.vbtn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;background:var(--card);border:1px solid var(--bdr);cursor:pointer;font-size:.76rem;font-weight:600;transition:.2s;color:var(--text);font-family:inherit}
+.vbtn.von{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:var(--green)}
+.vbtn.vmute{background:rgba(255,45,85,.1);border-color:rgba(255,45,85,.3);color:var(--red)}
+/* ── PROFILE ── */
+#pageProfile{padding-top:var(--nav);min-height:100vh;padding-bottom:50px}
+.prof-hero{background:linear-gradient(to bottom,var(--surf),var(--bg));padding:28px 14px 36px;border-bottom:1px solid var(--bdr)}
+.prof-card{max-width:720px;margin:0 auto;display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.pav{width:72px;height:72px;border-radius:16px;background:linear-gradient(135deg,var(--gold),#e8920a);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;color:#000;flex-shrink:0;box-shadow:0 5px 16px var(--gglow)}
+.pname{font-family:var(--fd);font-size:1.65rem;font-weight:700;margin-bottom:2px}
+.pemail{color:var(--muted);font-size:.84rem;margin-bottom:12px}
+.pstats{display:flex;gap:18px}
+.stn{font-size:1.4rem;font-weight:800;font-family:var(--fd);color:var(--gold)}
+.stl{color:var(--muted);font-size:.74rem}
+.prof-body{max-width:820px;margin:0 auto;padding:22px 14px}
+.tab-bar{display:flex;gap:2px;background:var(--surf);border-radius:10px;padding:3px;border:1px solid var(--bdr);margin-bottom:22px;width:fit-content}
+.tab-it{padding:7px 16px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--muted);transition:.2s;border:none;background:none;font-family:inherit}
+.tab-it.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+/* ── MODALS ── */
+.mov{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:0}
+@media(min-width:480px){.mov{align-items:center;padding:16px}}
+.mbox{background:var(--surf);border:1px solid var(--bdrb);border-radius:var(--r2) var(--r2) 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,.5);animation:fadeUp .3s ease}
+@media(min-width:480px){.mbox{border-radius:var(--r2)}}
+.mhdr{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.mhdr h2{font-family:var(--fd);font-size:1.4rem;font-weight:600}
+.mclose{width:32px;height:32px;border-radius:7px;background:var(--card);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:.9rem}
+.mbody{padding:14px 20px 20px}
+.det-bg{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r);margin-bottom:13px;background:var(--card)}
+.det-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:.82rem;margin-bottom:12px}
+.det-rating{background:var(--gdim);color:var(--gold);padding:2px 8px;border-radius:5px;font-weight:700;font-size:.78rem}
+.det-desc{color:rgba(240,239,248,.7);line-height:1.65;margin-bottom:18px;font-size:.88rem}
+.det-acts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+.ep-list{display:flex;flex-direction:column;gap:7px;max-height:240px;overflow-y:auto}
+.ep-item{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:9px 11px;cursor:pointer;transition:.2s}
+.ep-item:hover,.ep-item:active{border-color:var(--bdrb);background:var(--cardh)}
+.ep-n{font-family:monospace;font-size:.76rem;color:var(--muted);width:26px;flex-shrink:0}
+.ep-t{flex:1;font-size:.84rem;font-weight:600;line-height:1.3}
+.ep-d{color:var(--muted);font-size:.74rem;flex-shrink:0}
+.ep-done{color:var(--green);flex-shrink:0}
+.ri{font-family:monospace;font-size:1.5rem;font-weight:800;letter-spacing:5px;text-align:center;text-transform:uppercase}
+/* ── TOAST ── */
+#toasts{position:fixed;bottom:18px;right:14px;z-index:9998;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+[dir="rtl"] #toasts{right:auto;left:14px}
+.toast{background:var(--surf);border:1px solid var(--bdrb);border-radius:8px;padding:10px 14px;font-size:.82rem;display:flex;align-items:center;gap:8px;box-shadow:0 5px 18px rgba(0,0,0,.4);animation:fadeUp .3s ease;pointer-events:auto;max-width:280px}
+.toast.ok .td{background:var(--green)}.toast.err .td{background:var(--red)}.toast.inf .td{background:var(--gold)}
+.td{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* ── SEARCH ── */
+#srchOv{position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:395;background:rgba(7,6,13,.97);backdrop-filter:blur(10px);padding:22px 14px;overflow-y:auto}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:14px}
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:.88rem}
+/* ── RTL ── */
+[dir="rtl"] .hero-bg::after{background:linear-gradient(to left,rgba(7,6,13,.93) 35%,transparent 100%),linear-gradient(to top,rgba(7,6,13,1) 0%,transparent 60%)}
+[dir="rtl"] .cplay svg{margin-left:0;margin-right:2px}
+[dir="rtl"] .pside{border-left:none;border-right:1px solid var(--bdr)}
+@media(max-width:640px){[dir="rtl"] .pside{right:auto;left:0;box-shadow:6px 0 28px rgba(0,0,0,.5)}}
+</style>
+</head>
+<body>
+
+<!-- LOAD SCREEN -->
+<div id="loadScr"><div class="load-logo">CineVerse</div><div class="sp"></div></div>
+
+<!-- AUTH -->
+<div id="authWrap" class="hidden">
+  <div class="auth-orb ao1"></div>
+  <div class="auth-orb ao2"></div>
+  <div class="auth-card afu">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('ku')">کوردی</button>
+      </div>
+    </div>
+    <div class="auth-logo">
+      <div class="auth-icon">🎬</div>
+      <h1>CineVerse</h1>
+      <p id="authTag">Watch. Share. Experience.</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabIn" onclick="switchTab('in')" data-i="signIn">Sign In</button>
+      <button class="auth-tab" id="tabUp" onclick="switchTab('up')" data-i="signUp">Sign Up</button>
+    </div>
+    <div id="aMsg" class="auth-msg"></div>
+    <!-- LOGIN -->
+    <div id="fIn">
+      <div class="form-group">
+        <label class="form-label" data-i="email">Email</label>
+        <input id="inEmail" class="form-input" type="email" autocomplete="email" placeholder="you@example.com" dir="ltr">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i="password">Password</label>
+        <input id="inPass" class="form-input" type="password" autocomplete="current-password" placeholder="••••••••" dir="ltr">
+      </div>
+      <button class="btn btn-gold btn-full" style="margin-top:10px" onclick="doLogin()">
+        <span id="inTxt" data-i="signIn">Sign In</span><div class="sp hidden" id="inSp" style="width:16px;height:16px;border-width:2px"></div>
+      </button>
+    </div>
+    <!-- REGISTER -->
+    <div id="fUp" class="hidden">
+      <div class="form-group">
+        <label class="form-label" data-i="yourName">Your Name</label>
+        <input id="upName" class="form-input" autocomplete="name" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i="email">Email</label>
+        <input id="upEmail" class="form-input" type="email" autocomplete="email" placeholder="you@example.com" dir="ltr">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i="password">Password</label>
+        <input id="upPass" class="form-input" type="password" autocomplete="new-password" placeholder="Min 6 characters" dir="ltr">
+      </div>
+      <button class="btn btn-gold btn-full" style="margin-top:10px" onclick="doRegister()">
+        <span id="upTxt" data-i="createAccount">Create Account</span><div class="sp hidden" id="upSp" style="width:16px;height:16px;border-width:2px"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <!-- NAV -->
+  <nav id="navbar">
+    <div class="nav-logo" onclick="showPage('home')">CineVerse</div>
+    <div class="nav-links">
+      <button class="nav-link active" id="nl-home" onclick="showPage('home');setAN('home')" data-i="home">Home</button>
+      <button class="nav-link" id="nl-movies" onclick="filterT('movie');setAN('movies')" data-i="movies">Movies</button>
+      <button class="nav-link" id="nl-series" onclick="filterT('series');setAN('series')" data-i="series">Series</button>
+      <button class="nav-link" id="nl-drama" onclick="filterT('drama');setAN('drama')" data-i="dramas">Dramas</button>
+    </div>
+    <div class="nav-right">
+      <div class="nav-srch">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="srchIn" placeholder="Search..." oninput="onSearch(this.value)" data-i-ph="search">
+      </div>
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('ku')">کوردی</button>
+      </div>
+      <div class="nav-av" id="navAv" onclick="showPage('profile')"></div>
+    </div>
+  </nav>
+
+  <!-- HOME -->
+  <div id="pageHome">
+    <div class="hero">
+      <div class="hero-bg" id="heroBg"></div>
+      <div class="hero-content afu">
+        <div class="hero-badge">⭐ <span data-i="featured">Featured</span></div>
+        <h1 class="hero-title" id="heroTitle">—</h1>
+        <div class="hero-meta">
+          <span id="hYear"></span><div class="hero-dot"></div>
+          <span class="hero-rating" id="hRating"></span><div class="hero-dot"></div>
+          <span id="hGenre"></span>
+        </div>
+        <p class="hero-desc" id="hDesc"></p>
+        <div class="hero-actions">
+          <button class="btn btn-gold" onclick="playHero()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <span data-i="playNow">Play Now</span>
+          </button>
+          <button class="btn btn-ghost" onclick="openDetail(W.heroId)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span data-i="moreInfo">More Info</span>
+          </button>
+        </div>
+      </div>
+      <div class="hero-fade"></div>
+    </div>
+    <div id="homeRows" style="padding-top:22px"></div>
+  </div>
+
+  <!-- PLAYER -->
+  <div id="pagePlayer" class="hidden">
+    <div class="pl-hdr">
+      <button class="btn btn-ghost btn-sm" onclick="closePlayer()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        <span data-i="back">Back</span>
+      </button>
+      <div class="pl-title" id="plTitle"></div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleParty()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span data-i="watchParty">Watch Party</span>
+      </button>
+    </div>
+    <div class="pl-body">
+      <div class="pl-main">
+        <iframe id="pIframe" class="hidden" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe>
+        <video id="pVideo" class="hidden" controls></video>
+      </div>
+      <!-- PARTY SIDEBAR -->
+      <div class="pside closed" id="partySide">
+        <div class="pside-hdr">
+          <h3><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span data-i="watchParty">Watch Party</span></h3>
+          <div id="pNoRoom" style="display:flex;gap:6px">
+            <button class="btn btn-gold btn-sm" style="flex:1" onclick="createRoom()"><span data-i="createRoom">Create Room</span></button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openModal('mJoin')"><span data-i="joinRoom">Join Room</span></button>
+          </div>
+          <div id="pInRoom" class="hidden">
+            <div class="room-code-box">
+              <div>
+                <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px" data-i="roomCode">Room Code</div>
+                <div class="room-code" id="dispCode"></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="copyCode()">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <button class="btn btn-ghost btn-sm btn-full" style="margin-top:6px" onclick="leaveRoom()"><span data-i="leaveRoom">Leave Room</span></button>
+          </div>
+        </div>
+        <div class="pmembers"><h4 data-i="members">Members</h4><div class="mlist" id="mList"></div></div>
+        <div class="pchat">
+          <div class="cmsgs" id="cMsgs"></div>
+          <div class="cinput-wrap">
+            <input class="cinput" id="cIn" placeholder="Say something..." data-i-ph="saySomething" onkeydown="if(event.key==='Enter')sendMsg()">
+            <button class="btn btn-gold btn-sm" onclick="sendMsg()"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/></svg></button>
+          </div>
+        </div>
+        <div class="vbar">
+          <button class="vbtn" id="vBtn" onclick="toggleVoice()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            <span id="vTxt" data-i="joinVoice">Join Voice</span>
+          </button>
+          <div style="flex:1;font-size:.72rem;color:var(--muted)" id="vSt"></div>
+          <button class="vbtn hidden" id="muteBtn" onclick="toggleMute()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            <span id="muteTxt" data-i="mute">Mute</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="pageProfile" class="hidden">
+    <div class="prof-hero">
+      <div class="prof-card">
+        <div class="pav" id="profAv"></div>
+        <div>
+          <div class="pname" id="profName"></div>
+          <div class="pemail" id="profEmail"></div>
+          <div class="pstats">
+            <div><div class="stn" id="sW">0</div><div class="stl" data-i="watched">Watched</div></div>
+            <div><div class="stn" id="sL">0</div><div class="stl" data-i="myList">My List</div></div>
+            <div><div class="stn" id="sP">0</div><div class="stl" data-i="parties">Parties</div></div>
+          </div>
+        </div>
+        <div style="margin-left:auto"></div>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="align-self:flex-start">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span data-i="signOut">Sign Out</span>
+        </button>
+      </div>
+    </div>
+    <div class="prof-body">
+      <div class="tab-bar">
+        <button class="tab-it active" onclick="profTab('wl')" data-i="myList">My List</button>
+        <button class="tab-it" onclick="profTab('wd')" data-i="history">History</button>
+        <button class="tab-it" onclick="profTab('ct')" data-i="continueWatching">Continue</button>
+      </div>
+      <div id="profC"></div>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="srchOv" class="hidden">
+    <div style="max-width:820px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <h2 style="font-family:var(--fd);font-size:1.35rem" id="srchTitle">Results</h2>
+        <button onclick="closeSrch()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+      <div class="sgrid" id="srchGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="mov hidden" id="mDetail">
+  <div class="mbox" style="max-width:520px">
+    <div class="mhdr"><h2 id="dTitle"></h2><div class="mclose" onclick="closeModal('mDetail')">✕</div></div>
+    <div class="mbody">
+      <img class="det-bg" id="dImg" src="" alt="" onerror="this.style.display='none'">
+      <div class="det-meta">
+        <span class="det-rating" id="dRating"></span>
+        <span id="dYear"></span><span id="dType"></span><span id="dGenres"></span>
+      </div>
+      <p class="det-desc" id="dDesc"></p>
+      <div class="det-acts">
+        <button class="btn btn-gold" onclick="playFromDetail()">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+          <span data-i="play">Play</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" id="wlBtn" onclick="toggleWL()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+          <span data-i="addToList">Add to List</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="watchTogether()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span data-i="watchTogether">Together</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="markWatched()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <span data-i="markWatched">Watched</span>
+        </button>
+      </div>
+      <div id="dEps" class="hidden">
+        <h4 style="font-size:.8rem;font-weight:700;margin-bottom:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em" data-i="episodes">Episodes</h4>
+        <div class="ep-list" id="epList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN MODAL -->
+<div class="mov hidden" id="mJoin">
+  <div class="mbox" style="max-width:340px">
+    <div class="mhdr"><h2 data-i="joinRoom">Join Room</h2><div class="mclose" onclick="closeModal('mJoin')">✕</div></div>
+    <div class="mbody">
+      <p style="color:var(--muted);font-size:.86rem;margin-bottom:14px" data-i="enterRoomCode">Enter the 6-character room code:</p>
+      <input id="joinIn" class="form-input ri" maxlength="6" placeholder="ABC123" dir="ltr">
+      <div style="margin-top:12px;display:flex;gap:7px">
+        <button class="btn btn-gold" style="flex:1" onclick="joinRoom()"><span data-i="join">Join</span></button>
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('mJoin')" data-i="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="rAudios" style="display:none"></div>
+
+<script>
+// ━━ STRINGS ━━
+const S={en:{home:'Home',movies:'Movies',series:'Series',dramas:'Dramas',featured:'Featured',
+  signIn:'Sign In',signUp:'Sign Up',signOut:'Sign Out',email:'Email',password:'Password',
+  yourName:'Your Name',createAccount:'Create Account',playNow:'Play Now',moreInfo:'More Info',
+  play:'Play',back:'Back',addToList:'Add to List',removeFromList:'Remove from List',
+  watchTogether:'Together',watchParty:'Watch Party',createRoom:'Create Room',
+  joinRoom:'Join Room',join:'Join',cancel:'Cancel',leaveRoom:'Leave Room',
+  roomCode:'Room Code',members:'Members',joinVoice:'Join Voice',leaveVoice:'Leave Voice',
+  mute:'Mute',unmute:'Unmute',episodes:'Episodes',watched:'Watched',myList:'My List',
+  parties:'Parties',history:'History',continueWatching:'Continue',
+  enterRoomCode:'Enter the 6-character room code:',saySomething:'Say something...',search:'Search...',
+  trending:'Trending',topRated:'Top Rated',addedToList:'Added to list!',removedFromList:'Removed',
+  codeCopied:'Code copied!',roomCreated:'Room created!',roomJoined:'Joined room!',
+  voiceOn:'Voice connected',tagline:'Watch. Share. Experience.',noResults:'No results found',
+  markWatched:'Watched',markedDone:'Marked as watched ✓',loading:'...',
+  errLogin:'Wrong email or password.',errNetwork:'Network error. Check connection.',
+  errEmail:'Email already in use.',errPass:'Password must be 6+ characters.',errFill:'Fill in all fields.'},
+ ku:{home:'ماڵەوە',movies:'فیلمەکان',series:'زنجیرەکان',dramas:'دراماکان',featured:'تایبەتمەند',
+  signIn:'چوونەژوورەوە',signUp:'تۆمارکردن',signOut:'چوونەدەرەوە',email:'ئیمەیڵ',password:'پاسوۆرد',
+  yourName:'ناوت',createAccount:'دروستکردنی ئەکاونت',playNow:'لێدان',moreInfo:'زانیاری زیاتر',
+  play:'لێدان',back:'گەڕانەوە',addToList:'زیادکردن بۆ لیست',removeFromList:'لابردن لە لیست',
+  watchTogether:'پێکەوە',watchParty:'پارتی تەماشاکردن',createRoom:'دروستکردنی ژوور',
+  joinRoom:'چوونەژووری ژوور',join:'بچوو',cancel:'هەڵوەشاندن',leaveRoom:'جێهێشتنی ژوور',
+  roomCode:'کۆدی ژوور',members:'ئەندامان',joinVoice:'بەشداریکردن لە دەنگ',leaveVoice:'جێهێشتنی دەنگ',
+  mute:'دەنگبڕکردن',unmute:'کردنەوەی دەنگ',episodes:'ئەپیزۆدەکان',watched:'تەماشاکرا',
+  myList:'لیستەکەم',parties:'پارتیەکان',history:'مێژوو',continueWatching:'بەردەوامبوون',
+  enterRoomCode:'کۆدی ژووری ٦ پیتی بنووسە:',saySomething:'شتێک بڵێ...',search:'گەڕان...',
+  trending:'بە ترند',topRated:'باشترین نرخدانەکان',addedToList:'زیادکرا بۆ لیستت',removedFromList:'لابرا',
+  codeCopied:'کۆدەکە کۆپیکرا!',roomCreated:'ژووری دروستکرا!',roomJoined:'بەشداری ژوورەکە کردی!',
+  voiceOn:'دەنگ پەیوەست بوو',tagline:'تەماشا بکە. هاوبەش بکە. ئەزموون بکە.',noResults:'هیچ ئەنجامێک نەدۆزرایەوە',
+  markWatched:'نیشانکردن وەک تەماشاکرا',markedDone:'تەماشاکرا ✓',loading:'...',
+  errLogin:'ئیمەیڵ یان پاسوۆرد هەڵەیە.',errNetwork:'هەڵەی تۆڕ. ئینتەرنێتەکەت بپشکنە.',
+  errEmail:'ئەم ئیمەیڵە بەکارهاتووە.',errPass:'پاسوۆرد دەبێت لانی کەمی ٦ پیت بێت.',errFill:'هەموو خانەکان پڕبکەرەوە.'}};
+
+let LANG='en';
+const t=k=>(S[LANG]||S.en)[k]||S.en[k]||k;
+const tt=i=>LANG==='ku'&&i.title_ku?i.title_ku:i.title_en||i.title||'';
+const td=i=>LANG==='ku'&&i.desc_ku?i.desc_ku:i.desc_en||i.desc||'';
+
+// ━━ GLOBAL STATE ━━
+const W={
+  content:[], cu:null,
+  ud:{watchlist:[],watched:{},continueWatching:{},partiesJoined:0},
+  heroId:null, detailId:null, curCid:null, curEp:0,
+  roomId:null, partyOpen:false, syncing:false,
+  peer:null, stream:null, calls:{}, voiceOn:false, muted:false
+};
+
+// ━━ CONTENT DATA (instant, no Firebase needed) ━━
+W.content=[
+  {id:'m1',type:'movie',title_en:'Inception',title_ku:'ئینسێپشن',
+   desc_en:'A thief steals corporate secrets via dream-sharing tech and is given the task of planting an idea.',
+   desc_ku:'دزێک کە سیکرێتی کۆمپانیاکان دەدزێت، ئەرکی ئیدیاکاری لە مێشکی کەسێکدا تێدەپەرێنرێت.',
+   year:2010,rating:'8.8',genres:['Sci-Fi','Thriller'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
+   videoUrl:'https://www.youtube.com/embed/YoHD9XEInc0?autoplay=1&enablejsapi=1'},
+  {id:'m2',type:'movie',title_en:'The Dark Knight',title_ku:'شوالیەی تاریک',
+   desc_en:'When the Joker wreaks havoc on Gotham, Batman faces his greatest test.',
+   desc_ku:'کاتێک جۆکەر خراپی دەخاتە سەر گۆتام، بەتمان گەورەترین تاقیکردنەوەی ڕووبەڕووی دەبێتەوە.',
+   year:2008,rating:'9.0',genres:['Action','Crime'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/hkBaDkMWbLaf8B1lsWsKX7Ew3Xq.jpg',
+   videoUrl:'https://www.youtube.com/embed/EXeTwQWrcwY?autoplay=1&enablejsapi=1'},
+  {id:'m3',type:'movie',title_en:'Interstellar',title_ku:'ئینتەرستێلار',
+   desc_en:'A team travels through a wormhole in space to ensure humanity\'s survival.',
+   desc_ku:'تیمێک لە ڕێگای دەلیزێکی فەزاوە تێپەڕدەن بۆ مانەوەی ئینسانیەت.',
+   year:2014,rating:'8.6',genres:['Sci-Fi','Drama'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg',
+   videoUrl:'https://www.youtube.com/embed/zSWdZVtXT7E?autoplay=1&enablejsapi=1'},
+  {id:'m4',type:'movie',title_en:'Parasite',title_ku:'پارازایت',
+   desc_en:'Greed threatens the bond between a wealthy and poor family.',
+   desc_ku:'تامعکاری پەیوەندی نێوان خێزانی دەوڵەمەند و ئەهڵی بێچارە مەترسیدار دەکات.',
+   year:2019,rating:'8.5',genres:['Thriller','Drama'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/TU9NIjwzjoKPwQHoHshkFcQUCG.jpg',
+   videoUrl:'https://www.youtube.com/embed/5xH0HfJHsaY?autoplay=1&enablejsapi=1'},
+  {id:'m5',type:'movie',title_en:'Dune: Part One',title_ku:'دیون',
+   desc_en:'A noble\'s son must travel to the most dangerous planet to secure his people\'s future.',
+   desc_ku:'کوڕی خێزانێکی نەجیب پێویستە بڕوات بۆ مەترسیدارترین گەرەکی گیهانی.',
+   year:2021,rating:'8.0',genres:['Sci-Fi','Adventure'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/d5NXSklpcvkCgnJQ3h2l5GBFDl.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/jYEW5xZkZk2WTrdbMGAPFuBqbDc.jpg',
+   videoUrl:'https://www.youtube.com/embed/n9xhJrPXop4?autoplay=1&enablejsapi=1'},
+  {id:'s1',type:'series',title_en:'Breaking Bad',title_ku:'بریکینگ بەد',
+   desc_en:'A chemistry teacher with cancer turns to manufacturing methamphetamine.',
+   desc_ku:'مامۆستایەکی کیمیا کە بە شێرپەنجە دیاریکرا مێتامفێتامین دروست دەکات.',
+   year:2008,rating:'9.5',genres:['Crime','Drama'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg',
+   episodes:[
+     {id:1,title_en:'Pilot',title_ku:'سەرەتا',duration:'58m',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+     {id:2,title_en:"Cat's in the Bag",title_ku:'پشیلە لە تۆڕدایە',duration:'48m',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+     {id:3,title_en:'And the Bag is in the River',title_ku:'تۆڕەکە لە ڕووبارەدایە',duration:'49m',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+     {id:4,title_en:'Cancer Man',title_ku:'پیاوی شێرپەنجە',duration:'48m',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'},
+     {id:5,title_en:'Gray Matter',title_ku:'مادەی مزرووی',duration:'49m',videoUrl:'https://www.youtube.com/embed/HhesaQXLuRY?autoplay=1&enablejsapi=1'}]},
+  {id:'d1',type:'drama',title_en:'Squid Game',title_ku:'یاری مارماڵکە',
+   desc_en:'Players accept a secret invitation to compete in children\'s games with deadly stakes.',
+   desc_ku:'یاریزانان بانگهێشتنامەیەکی نهێنی قبووڵ دەکەن بۆ یارییەکانی منداڵان لەگەڵ مەترسیی گیانی.',
+   year:2021,rating:'8.0',genres:['Drama','Thriller'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/qw3J9cNeLioOLoR68WX7z79aCdK.jpg',
+   episodes:[
+     {id:1,title_en:'Red Light, Green Light',title_ku:'چراغی سووری، چراغی سەوز',duration:'60m',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+     {id:2,title_en:'Hell',title_ku:'دۆزەخ',duration:'63m',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+     {id:3,title_en:'The Man with the Umbrella',title_ku:'پیاوەکە لەگەڵ کوللکە',duration:'57m',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+     {id:4,title_en:'Stick to the Team',title_ku:'پشت بە تیمەکەت ببەست',duration:'55m',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'},
+     {id:5,title_en:'A Fair World',title_ku:'جیهانێکی دادپەروەر',duration:'55m',videoUrl:'https://www.youtube.com/embed/oqxAJKy0ii4?autoplay=1&enablejsapi=1'}]},
+  {id:'d2',type:'drama',title_en:'Extraordinary Attorney Woo',title_ku:'ئەتتۆرنێی ووی سەیرووعەجێب',
+   desc_en:'A brilliant attorney with autism navigates the legal world in this beloved Korean drama.',
+   desc_ku:'ئەتتۆرنێیەکی سەیر کە بەناخۆشی ئۆتیزم هەیە جیهانی یاسایی دەگوازێتەوە.',
+   year:2022,rating:'8.7',genres:['Drama','Legal'],
+   thumbnail:'https://image.tmdb.org/t/p/w500/oIkQkEkwfmcG7IGpjXgyHDLxkbA.jpg',
+   backdrop:'https://image.tmdb.org/t/p/w1280/nJUHX3XL5jOcYd0GSMkrKVjvECg.jpg',
+   episodes:[
+     {id:1,title_en:'Episode 1',title_ku:'ئەپیزۆد ١',duration:'66m',videoUrl:'https://www.youtube.com/embed/tnCa9lcvzDI?autoplay=1&enablejsapi=1'},
+     {id:2,title_en:'Episode 2',title_ku:'ئەپیزۆد ٢',duration:'64m',videoUrl:'https://www.youtube.com/embed/tnCa9lcvzDI?autoplay=1&enablejsapi=1'},
+     {id:3,title_en:'Episode 3',title_ku:'ئەپیزۆد ٣',duration:'62m',videoUrl:'https://www.youtube.com/embed/tnCa9lcvzDI?autoplay=1&enablejsapi=1'}]}
+];
+
+// ━━ UI HELPERS ━━
+window.setLang=function(l){
+  LANG=l;
+  const r=document.getElementById('htmlRoot');r.lang=l;r.dir=l==='ku'?'rtl':'ltr';
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    const isKu=b.textContent.trim()==='کوردی';
+    b.classList.toggle('active',l==='ku'?isKu:!isKu);
+  });
+  document.querySelectorAll('[data-i]').forEach(el=>{const s=t(el.getAttribute('data-i'));if(s)el.textContent=s;});
+  document.querySelectorAll('[data-i-ph]').forEach(el=>{const s=t(el.getAttribute('data-i-ph'));if(s)el.placeholder=s;});
+  const ag=document.getElementById('authTag');if(ag)ag.textContent=t('tagline');
+  renderHome();refreshHero();
+};
+
+window.switchTab=function(tab){
+  document.getElementById('tabIn').classList.toggle('active',tab==='in');
+  document.getElementById('tabUp').classList.toggle('active',tab==='up');
+  document.getElementById('fIn').classList.toggle('hidden',tab!=='in');
+  document.getElementById('fUp').classList.toggle('hidden',tab!=='up');
+  setAMsg('','');
+};
+
+function setAMsg(msg,type){
+  const el=document.getElementById('aMsg');
+  el.className='auth-msg'+(type?' '+type:'');
+  el.textContent=msg;el.style.display=msg?'block':'none';
+}
+
+window.openModal=id=>document.getElementById(id).classList.remove('hidden');
+window.closeModal=id=>document.getElementById(id).classList.add('hidden');
+document.addEventListener('click',e=>{if(e.target.classList.contains('mov'))e.target.classList.add('hidden');});
+
+window.showPage=function(p){
+  ['home','player','profile'].forEach(n=>{
+    document.getElementById('page'+n.charAt(0).toUpperCase()+n.slice(1))?.classList.toggle('hidden',n!==p);
+  });
+  document.getElementById('srchOv').classList.add('hidden');
+};
+window.setAN=function(n){
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nl-'+n)?.classList.add('active');
+};
+window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',scrollY>10));
+
+window.toast=function(msg,type='inf'){
+  const c=document.getElementById('toasts'),d=document.createElement('div');
+  d.className=`toast ${type}`;d.innerHTML=`<div class="td"></div><span>${msg}</span>`;
+  c.appendChild(d);setTimeout(()=>d.remove(),3200);
+};
+
+function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
+
+// ━━ RENDER HOME ━━
+function renderHome(){
+  refreshHero();
+  const rows=document.getElementById('homeRows');if(!rows)return;
+  rows.innerHTML='';
+  const cont=Object.keys(W.ud.continueWatching).map(id=>W.content.find(c=>c.id===id)).filter(Boolean);
+  if(cont.length)mkRow(rows,t('continueWatching'),cont,true);
+  mkRow(rows,t('trending'),[...W.content].sort(()=>Math.random()-.5).slice(0,8));
+  const mv=W.content.filter(c=>c.type==='movie');if(mv.length)mkRow(rows,t('movies'),mv);
+  const sr=W.content.filter(c=>c.type==='series');if(sr.length)mkRow(rows,t('series'),sr);
+  const dr=W.content.filter(c=>c.type==='drama');if(dr.length)mkRow(rows,t('dramas'),dr);
+  mkRow(rows,t('topRated'),[...W.content].sort((a,b)=>parseFloat(b.rating||0)-parseFloat(a.rating||0)).slice(0,8));
+}
+
+function mkRow(container,title,items,wide=false){
+  const sec=document.createElement('div');sec.className='csec afu';
+  sec.innerHTML=`<div class="sec-hdr"><h2 class="sec-title">${title}</h2></div>
+    <div class="row-sc">${items.map(item=>mkCard(item,wide)).join('')}</div>`;
+  container.appendChild(sec);
+}
+
+function mkCard(item,wide){
+  const prog=W.ud.continueWatching[item.id];
+  const pct=prog?Math.min(100,(prog.time/prog.total)*100):0;
+  const isW=W.ud.watched[item.id];
+  return `<div class="card${wide?' card-wide':''}" onclick="openDetail('${item.id}')">
+    <div class="cimg-wrap">
+      <img class="cimg" src="${item.thumbnail||''}" alt="${esc(tt(item))}" loading="lazy"
+        onerror="this.style.background='var(--surf)'">
+      ${isW?`<div class="wbadge">✓</div>`:''}
+      <div class="cov">
+        <div class="cplay"><svg width="13" height="13" fill="#000" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg></div>
+        <div style="font-size:.72rem;font-weight:700;color:#fff">${esc(tt(item))}</div>
+      </div>
+    </div>
+    <div class="cinfo">
+      <div class="ctitle">${esc(tt(item))}</div>
+      <div class="cmeta"><span>${item.year||''}</span><span>·</span><span class="crating">★${item.rating||''}</span></div>
+      ${pct>0?`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`:''}
+    </div>
+  </div>`;
+}
+
+function refreshHero(){
+  const el=document.getElementById('heroTitle');if(!el)return;
+  if(!W.content.length){el.textContent='—';return;}
+  const f=W.content[0];W.heroId=f.id;
+  document.getElementById('heroBg').style.backgroundImage=`url(${f.backdrop||f.thumbnail||''})`;
+  el.textContent=tt(f);
+  document.getElementById('hYear').textContent=f.year||'';
+  document.getElementById('hRating').textContent=`★ ${f.rating||''}`;
+  document.getElementById('hGenre').textContent=(f.genres||[]).join(' · ');
+  document.getElementById('hDesc').textContent=td(f);
+}
+
+window.playHero=function(){if(W.heroId)playContent(W.heroId);};
+window.filterT=function(type){
+  showPage('home');setAN(type==='movie'?'movies':type==='series'?'series':'drama');
+  const rows=document.getElementById('homeRows');rows.innerHTML='';
+  mkRow(rows,{movie:t('movies'),series:t('series'),drama:t('dramas')}[type]||type,W.content.filter(c=>c.type===type));
+};
+
+let _st;
+window.onSearch=function(q){
+  clearTimeout(_st);
+  if(!q.trim()){closeSrch();return;}
+  _st=setTimeout(()=>{
+    const res=W.content.filter(c=>tt(c).toLowerCase().includes(q.toLowerCase())||td(c).toLowerCase().includes(q.toLowerCase()));
+    document.getElementById('srchOv').classList.remove('hidden');
+    document.getElementById('srchTitle').textContent=`"${q}" (${res.length})`;
+    document.getElementById('srchGrid').innerHTML=res.length
+      ?res.map(item=>`<div class="card" onclick="openDetail('${item.id}');closeSrch()">
+          <img class="cimg" src="${item.thumbnail||''}" loading="lazy" onerror="this.style.background='var(--surf)'">
+          <div class="cinfo"><div class="ctitle">${esc(tt(item))}</div>
+          <div class="cmeta"><span>${item.year||''}</span><span>·</span><span class="crating">★${item.rating||''}</span></div></div>
+        </div>`).join('')
+      :`<div class="empty" style="grid-column:1/-1">${t('noResults')}</div>`;
+  },280);
+};
+window.closeSrch=()=>document.getElementById('srchOv').classList.add('hidden');
+
+// ━━ DETAIL ━━
+window.openDetail=function(id){
+  const item=W.content.find(c=>c.id===id);if(!item)return;
+  W.detailId=id;
+  document.getElementById('dTitle').textContent=tt(item);
+  document.getElementById('dImg').src=item.backdrop||item.thumbnail||'';
+  document.getElementById('dImg').style.display='block';
+  document.getElementById('dRating').textContent=`★ ${item.rating||''}`;
+  document.getElementById('dYear').textContent=item.year||'';
+  document.getElementById('dType').textContent=' · '+({movie:t('movies'),series:t('series'),drama:t('dramas')}[item.type]||item.type);
+  document.getElementById('dGenres').textContent=item.genres?.length?' · '+item.genres.join(', '):'';
+  document.getElementById('dDesc').textContent=td(item);
+  const inL=W.ud.watchlist.includes(id);
+  document.getElementById('wlBtn').innerHTML=inL
+    ?`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>${t('removeFromList')}</span>`
+    :`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg><span>${t('addToList')}</span>`;
+  const epSec=document.getElementById('dEps');
+  if(item.episodes?.length){
+    epSec.classList.remove('hidden');
+    document.getElementById('epList').innerHTML=item.episodes.map((ep,i)=>{
+      const done=W.ud.watched[`${id}_ep${ep.id}`];
+      const epT=LANG==='ku'&&ep.title_ku?ep.title_ku:ep.title_en||`E${ep.id}`;
+      return `<div class="ep-item" onclick="playContent('${id}',${i});closeModal('mDetail')">
+        <span class="ep-n">E${ep.id}</span>
+        <div class="ep-t">${esc(epT)}<br><span style="font-size:.72rem;color:var(--muted);font-weight:400">${ep.duration||''}</span></div>
+        ${done?`<div class="ep-done">✓</div>`:''}
+      </div>`;
+    }).join('');
+  }else epSec.classList.add('hidden');
+  openModal('mDetail');
+};
+
+window.playFromDetail=function(){if(W.detailId){playContent(W.detailId);closeModal('mDetail');}};
+window.watchTogether=function(){if(W.detailId){playContent(W.detailId);closeModal('mDetail');setTimeout(()=>{if(!W.partyOpen)toggleParty();},350);}};
+window.markWatched=function(){
+  if(!W.detailId)return;
+  W.ud.watched[W.detailId]=Date.now();
+  saveUser&&saveUser();toast(t('markedDone'),'ok');closeModal('mDetail');renderHome();
+};
+window.toggleWL=function(){
+  if(!W.detailId)return;
+  const id=W.detailId,idx=W.ud.watchlist.indexOf(id);
+  if(idx>-1){W.ud.watchlist.splice(idx,1);toast(t('removedFromList'),'inf');}
+  else{W.ud.watchlist.push(id);toast(t('addedToList'),'ok');}
+  saveUser&&saveUser();openDetail(id);
+};
+
+// ━━ PLAYER ━━
+window.playContent=function(id,epIdx=0){
+  const item=W.content.find(c=>c.id===id);if(!item)return;
+  W.curCid=id;W.curEp=epIdx;
+  const url=item.episodes?item.episodes[epIdx]?.videoUrl:item.videoUrl;
+  if(!url){toast('No video URL','err');return;}
+  document.getElementById('plTitle').textContent=tt(item)+(item.episodes?` E${epIdx+1}`:'');
+  launchPlayer(url);showPage('player');
+};
+
+function launchPlayer(url){
+  const ifr=document.getElementById('pIframe'),vid=document.getElementById('pVideo');
+  if(url.includes('youtube.com')||url.includes('youtu.be')){
+    ifr.classList.remove('hidden');vid.classList.add('hidden');vid.pause();vid.src='';ifr.src=url;
+  }else{
+    ifr.classList.add('hidden');ifr.src='';vid.classList.remove('hidden');vid.src=url;
+    vid.play().catch(()=>{});
+    vid.onplay=()=>{if(!W.syncing&&W.roomId)fbSync({isPlaying:true,time:vid.currentTime});};
+    vid.onpause=()=>{if(!W.syncing&&W.roomId)fbSync({isPlaying:false,time:vid.currentTime});};
+    vid.onseeked=()=>{if(!W.syncing&&W.roomId)fbSync({isPlaying:!vid.paused,time:vid.currentTime});};
+  }
+}
+
+window.closePlayer=function(){
+  document.getElementById('pIframe').src='';
+  const v=document.getElementById('pVideo');v.pause();v.src='';
+  leaveRoom();showPage('home');
+};
+
+// ━━ PARTY ━━
+window.toggleParty=function(){
+  W.partyOpen=!W.partyOpen;
+  document.getElementById('partySide').classList.toggle('closed',!W.partyOpen);
+};
+window.copyCode=function(){navigator.clipboard?.writeText(W.roomId||'').then(()=>toast(t('codeCopied'),'inf'));};
+
+// ━━ PROFILE ━━
+function loadProfile(){
+  if(!W.cu)return;
+  document.getElementById('profAv').textContent=(W.cu.displayName||W.cu.email||'U').charAt(0).toUpperCase();
+  document.getElementById('profName').textContent=W.cu.displayName||'User';
+  document.getElementById('profEmail').textContent=W.cu.email||'';
+  document.getElementById('sW').textContent=Object.keys(W.ud.watched).length;
+  document.getElementById('sL').textContent=W.ud.watchlist.length;
+  document.getElementById('sP').textContent=W.ud.partiesJoined;
+  profTab('wl');
+}
+
+window.profTab=function(tab){
+  document.querySelectorAll('.tab-it').forEach((el,i)=>el.classList.toggle('active',['wl','wd','ct'][i]===tab));
+  const c=document.getElementById('profC');
+  const empty=`<div class="empty">${t('noResults')}</div>`;
+  if(tab==='wl'){
+    const items=W.ud.watchlist.map(id=>W.content.find(c=>c.id===id)).filter(Boolean);
+    c.innerHTML=items.length?`<div class="wl-grid">${items.map(i=>mkCard(i,false)).join('')}</div>`:empty;
+  }else if(tab==='wd'){
+    const ids=[...new Set(Object.keys(W.ud.watched).map(k=>k.split('_ep')[0]))];
+    const items=ids.map(id=>W.content.find(c=>c.id===id)).filter(Boolean);
+    c.innerHTML=items.length?`<div class="wl-grid">${items.map(i=>mkCard(i,false)).join('')}</div>`:empty;
+  }else{
+    const items=Object.keys(W.ud.continueWatching).map(id=>W.content.find(c=>c.id===id)).filter(Boolean);
+    c.innerHTML=items.length?`<div class="wl-grid">${items.map(i=>mkCard(i,false)).join('')}</div>`:empty;
+  }
+};
+
+// ━━ PLACEHOLDERS (filled by Firebase module) ━━
+let saveUser=null, fbSync=null;
+window.createRoom=window.joinRoom=window.leaveRoom=window.sendMsg=window.toggleVoice=window.toggleMute=function(){};
+window.doLogin=window.doRegister=window.doLogout=function(){toast('Firebase loading...','inf');};
+</script>
+
+<script type="module">
+import{initializeApp,getApps}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,updateProfile}
+  from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import{getDatabase,ref,set,get,push,onValue,off,update,remove}
+  from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const FB={
+  apiKey:"AIzaSyDYEwAKfZ7v4c2DEW-69aapkDIY4-z-_H0",
+  authDomain:"cineverse-af8a2.firebaseapp.com",
+  databaseURL:"https://cineverse-af8a2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"cineverse-af8a2",
+  storageBucket:"cineverse-af8a2.firebasestorage.app",
+  messagingSenderId:"945160374384",
+  appId:"1:945160374384:web:6c16f2a0a5795497bf8cb5"
+};
+
+let auth,db;
+try{
+  const app=getApps().find(a=>a.name==='[DEFAULT]')||initializeApp(FB);
+  auth=getAuth(app);db=getDatabase(app);
+}catch(e){console.error('Firebase:',e);}
+
+function hideLoad(){
+  const ls=document.getElementById('loadScr');
+  ls.classList.add('out');setTimeout(()=>ls.classList.add('hidden'),380);
+}
+
+// ━━ SAVE USER ━━
+saveUser=async function(){
+  if(!W.cu||!db)return;
+  try{await update(ref(db,`cv_users/${W.cu.uid}`),{
+    watchlist:W.ud.watchlist,watched:W.ud.watched,partiesJoined:W.ud.partiesJoined
+  });}catch(e){console.warn(e);}
+};
+
+// ━━ AUTH ━━
+window.doLogin=async function(){
+  const email=document.getElementById('inEmail').value.trim();
+  const pass=document.getElementById('inPass').value;
+  if(!email||!pass){setAMsg(t('errFill'),'err');return;}
+  const sp=document.getElementById('inSp');sp.classList.remove('hidden');
+  document.getElementById('inTxt').textContent=t('loading');
+  setAMsg('','');
+  try{await signInWithEmailAndPassword(auth,email,pass);}
+  catch(e){
+    console.log(e.code);
+    setAMsg({'auth/invalid-credential':t('errLogin'),'auth/user-not-found':t('errLogin'),
+      'auth/wrong-password':t('errLogin'),'auth/invalid-email':'Invalid email.',
+      'auth/too-many-requests':'Too many attempts. Wait a moment.',
+      'auth/network-request-failed':t('errNetwork'),
+      'auth/user-disabled':'Account disabled.'}[e.code]||`(${e.code})`,'err');
+  }finally{sp.classList.add('hidden');document.getElementById('inTxt').textContent=t('signIn');}
+};
+
+window.doRegister=async function(){
+  const name=document.getElementById('upName').value.trim();
+  const email=document.getElementById('upEmail').value.trim();
+  const pass=document.getElementById('upPass').value;
+  if(!name||!email||!pass){setAMsg(t('errFill'),'err');return;}
+  if(pass.length<6){setAMsg(t('errPass'),'err');return;}
+  const sp=document.getElementById('upSp');sp.classList.remove('hidden');
+  document.getElementById('upTxt').textContent=t('loading');
+  setAMsg('','');
+  try{
+    const c=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(c.user,{displayName:name});
+    await set(ref(db,`cv_users/${c.user.uid}`),{name,email,watchlist:[],watched:{},partiesJoined:0,createdAt:Date.now()});
+    setAMsg('Account created! Signing in...','ok');
+  }catch(e){
+    setAMsg({'auth/email-already-in-use':t('errEmail'),'auth/weak-password':t('errPass'),
+      'auth/invalid-email':'Invalid email.','auth/network-request-failed':t('errNetwork')}[e.code]||`(${e.code})`,'err');
+  }finally{sp.classList.add('hidden');document.getElementById('upTxt').textContent=t('createAccount');}
+};
+
+window.doLogout=async function(){
+  if(!confirm('Sign out?'))return;
+  leaveRoom();await signOut(auth);
+};
+
+// ━━ AUTH STATE ━━
+if(auth){
+  onAuthStateChanged(auth,async user=>{
+    hideLoad();
+    if(user){
+      W.cu=user;
+      document.getElementById('authWrap').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('navAv').textContent=(user.displayName||user.email||'U').charAt(0).toUpperCase();
+      // Load user data
+      try{
+        const snap=await get(ref(db,`cv_users/${user.uid}`));
+        if(snap.exists()){
+          const d=snap.val();
+          W.ud.watchlist=Array.isArray(d.watchlist)?d.watchlist:(d.watchlist?Object.values(d.watchlist):[]);
+          W.ud.watched=d.watched||{};
+          W.ud.continueWatching=d.continueWatching||{};
+          W.ud.partiesJoined=d.partiesJoined||0;
+        }
+      }catch(e){console.warn('Load user:',e);}
+      renderHome();refreshHero();setLang(LANG);
+      // Ensure profile page updates on navigation
+      document.getElementById('pageProfile').addEventListener('focus',()=>loadProfile(),{once:false});
+    }else{
+      W.cu=null;
+      document.getElementById('authWrap').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
+      W.ud={watchlist:[],watched:{},continueWatching:{},partiesJoined:0};
+    }
+  });
+}else{
+  // Firebase failed — still show content in demo mode
+  hideLoad();
+  document.getElementById('authWrap').classList.remove('hidden');
+}
+
+// ━━ showPage hook for profile ━━
+const _origShow=window.showPage;
+window.showPage=function(p){_origShow(p);if(p==='profile')setTimeout(loadProfile,30);};
+
+// ━━ WATCH PARTY (Realtime DB) ━━
+let _rl=null,_cl=null,_ml=null;
+
+function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase();}
+
+window.createRoom=async function(){
+  if(!W.cu){toast('Sign in first','err');return;}
+  const code=genCode();W.roomId=code;
+  try{
+    await set(ref(db,`cv_rooms/${code}`),{
+      code,host:W.cu.uid,contentId:W.curCid,epIdx:W.curEp,
+      playerState:{isPlaying:false,time:0,at:Date.now(),by:W.cu.uid},
+      members:{[W.cu.uid]:{name:W.cu.displayName||W.cu.email||'User',uid:W.cu.uid,mic:false}},
+      createdAt:Date.now()
+    });
+    W.ud.partiesJoined++;saveUser();
+    showRoomUI(code);toast(t('roomCreated'),'ok');listenRoom(code);
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.joinRoom=async function(){
+  const code=document.getElementById('joinIn').value.trim().toUpperCase();
+  if(code.length!==6){toast('Invalid code','err');return;}
+  try{
+    const snap=await get(ref(db,`cv_rooms/${code}`));
+    if(!snap.exists()){toast('Room not found','err');return;}
+    W.roomId=code;const room=snap.val();
+    await update(ref(db,`cv_rooms/${code}/members/${W.cu.uid}`),
+      {name:W.cu.displayName||W.cu.email||'User',uid:W.cu.uid,mic:false});
+    const item=W.content.find(c=>c.id===room.contentId);
+    if(item){
+      W.curCid=item.id;W.curEp=room.epIdx||0;
+      const url=item.episodes?item.episodes[W.curEp]?.videoUrl:item.videoUrl;
+      if(url){document.getElementById('plTitle').textContent=tt(item);launchPlayer(url);}
+    }
+    closeModal('mJoin');showPage('player');if(!W.partyOpen)toggleParty();
+    showRoomUI(code);toast(t('roomJoined'),'ok');listenRoom(code);
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+function showRoomUI(code){
+  document.getElementById('pNoRoom').classList.add('hidden');
+  document.getElementById('pInRoom').classList.remove('hidden');
+  document.getElementById('dispCode').textContent=code;
+}
+
+window.leaveRoom=async function(){
+  if(!W.roomId||!W.cu||!db)return;
+  try{await remove(ref(db,`cv_rooms/${W.roomId}/members/${W.cu.uid}`));}catch(e){}
+  if(_rl){off(ref(db,`cv_rooms/${W.roomId}/playerState`),_rl);_rl=null;}
+  if(_cl){off(ref(db,`cv_rooms/${W.roomId}/chat`),_cl);_cl=null;}
+  if(_ml){off(ref(db,`cv_rooms/${W.roomId}/members`),_ml);_ml=null;}
+  W.roomId=null;
+  document.getElementById('pNoRoom').classList.remove('hidden');
+  document.getElementById('pInRoom').classList.add('hidden');
+  document.getElementById('cMsgs').innerHTML='';
+  document.getElementById('mList').innerHTML='';
+  stopVoice();
+};
+
+function listenRoom(code){
+  _rl=onValue(ref(db,`cv_rooms/${code}/playerState`),snap=>{
+    if(!snap.exists()||snap.val().by===W.cu?.uid)return;
+    applyState(snap.val());
+  });
+  _ml=onValue(ref(db,`cv_rooms/${code}/members`),snap=>{
+    if(!snap.exists()){document.getElementById('mList').innerHTML='';return;}
+    const members=Object.values(snap.val());
+    document.getElementById('mList').innerHTML=members.map(m=>`
+      <div class="mchip">
+        <div class="mav">${(m.name||'?').charAt(0).toUpperCase()}</div>
+        <span style="max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name||'User')}</span>
+        <svg class="mmic${m.mic?' on':''}" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        </svg>
+      </div>`).join('');
+    if(W.voiceOn)connectNew(members);
+  });
+  _cl=onValue(ref(db,`cv_rooms/${code}/chat`),snap=>{
+    if(!snap.exists()){document.getElementById('cMsgs').innerHTML='';return;}
+    const msgs=Object.values(snap.val()).sort((a,b)=>a.time-b.time);
+    const c=document.getElementById('cMsgs');
+    c.innerHTML=msgs.map(m=>{
+      const mine=m.uid===W.cu?.uid;
+      const d=new Date(m.time),tm=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `<div class="cmsg${mine?' mine':''}">
+        <div class="cmsg-hdr"><span class="cname">${esc(m.name||'User')}</span><span class="ctime">${tm}</span></div>
+        <div class="ctext">${esc(m.text)}</div>
+      </div>`;
+    }).join('');
+    c.scrollTop=c.scrollHeight;
+  });
+}
+
+function applyState(st){
+  W.syncing=true;
+  const vid=document.getElementById('pVideo'),ifr=document.getElementById('pIframe');
+  const isYT=!ifr.classList.contains('hidden');
+  if(isYT){
+    try{ifr.contentWindow?.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[st.time,true]}),'*');}catch(e){}
+    try{ifr.contentWindow?.postMessage(JSON.stringify({event:'command',func:st.isPlaying?'playVideo':'pauseVideo',args:[]}),'*');}catch(e){}
+  }else{
+    if(Math.abs(vid.currentTime-st.time)>2)vid.currentTime=st.time;
+    if(st.isPlaying&&vid.paused)vid.play().catch(()=>{});
+    else if(!st.isPlaying&&!vid.paused)vid.pause();
+  }
+  setTimeout(()=>W.syncing=false,700);
+}
+
+fbSync=async function(st){
+  if(!W.roomId||!W.cu||!db)return;
+  try{await update(ref(db,`cv_rooms/${W.roomId}/playerState`),{...st,at:Date.now(),by:W.cu.uid});}catch(e){}
+};
+
+window.sendMsg=async function(){
+  const inp=document.getElementById('cIn'),text=inp.value.trim();
+  if(!text||!W.roomId||!W.cu)return;
+  inp.value='';
+  try{await push(ref(db,`cv_rooms/${W.roomId}/chat`),{uid:W.cu.uid,name:W.cu.displayName||W.cu.email||'User',text,time:Date.now()});}
+  catch(e){toast('Error sending','err');}
+};
+
+// ━━ VOICE (PeerJS) ━━
+window.toggleVoice=async()=>W.voiceOn?stopVoice():startVoice();
+
+async function startVoice(){
+  if(!W.roomId||!W.cu){toast('Join a room first','err');return;}
+  try{
+    W.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    const pid=`cv_${W.roomId}_${W.cu.uid.substring(0,8)}`;
+    W.peer=new Peer(pid,{debug:0});
+    W.peer.on('open',async()=>{
+      W.voiceOn=true;W.muted=false;
+      document.getElementById('vBtn').className='vbtn von';
+      document.getElementById('vTxt').textContent=t('leaveVoice');
+      document.getElementById('muteBtn').classList.remove('hidden');
+      document.getElementById('vSt').textContent=t('voiceOn');
+      try{await update(ref(db,`cv_rooms/${W.roomId}/members/${W.cu.uid}`),{mic:true});}catch(e){}
+      const snap=await get(ref(db,`cv_rooms/${W.roomId}/members`));
+      if(snap.exists()){
+        Object.keys(snap.val()).forEach(uid=>{
+          if(uid!==W.cu.uid){
+            try{const call=W.peer.call(`cv_${W.roomId}_${uid.substring(0,8)}`,W.stream);
+              call.on('stream',s=>addAudio(s,uid));W.calls[uid]=call;}catch(e){}
+          }
+        });
+      }
+    });
+    W.peer.on('call',call=>{call.answer(W.stream);call.on('stream',s=>addAudio(s,call.peer));});
+    W.peer.on('error',()=>{toast('Voice error','err');stopVoice();});
+  }catch(e){toast('Microphone denied','err');}
+}
+
+function stopVoice(){
+  W.voiceOn=false;
+  if(W.stream){W.stream.getTracks().forEach(t=>t.stop());W.stream=null;}
+  Object.values(W.calls).forEach(c=>{try{c.close();}catch(e){}});W.calls={};
+  if(W.peer){try{W.peer.destroy();}catch(e){};W.peer=null;}
+  document.getElementById('rAudios').innerHTML='';
+  document.getElementById('vBtn').className='vbtn';
+  document.getElementById('vTxt').textContent=t('joinVoice');
+  document.getElementById('muteBtn').classList.add('hidden');
+  document.getElementById('vSt').textContent='';
+  if(W.roomId&&W.cu&&db)try{update(ref(db,`cv_rooms/${W.roomId}/members/${W.cu.uid}`),{mic:false});}catch(e){}
+}
+
+function addAudio(stream,id){
+  const eid='_a'+String(id).replace(/[^a-z0-9]/gi,'');
+  if(document.getElementById(eid))return;
+  const a=document.createElement('audio');a.id=eid;a.srcObject=stream;a.autoplay=true;
+  document.getElementById('rAudios').appendChild(a);
+}
+
+window.toggleMute=function(){
+  if(!W.stream)return;W.muted=!W.muted;
+  W.stream.getAudioTracks().forEach(t=>t.enabled=!W.muted);
+  document.getElementById('muteBtn').className='vbtn'+(W.muted?' vmute':'');
+  document.getElementById('muteTxt').textContent=W.muted?t('unmute'):t('mute');
+  if(W.roomId&&W.cu&&db)try{update(ref(db,`cv_rooms/${W.roomId}/members/${W.cu.uid}`),{mic:!W.muted});}catch(e){}
+};
+
+function connectNew(members){
+  if(!W.peer||!W.stream||!W.voiceOn)return;
+  members.forEach(m=>{
+    if(m.uid!==W.cu?.uid&&!W.calls[m.uid]){
+      try{const call=W.peer.call(`cv_${W.roomId}_${m.uid.substring(0,8)}`,W.stream);
+        call.on('stream',s=>addAudio(s,m.uid));W.calls[m.uid]=call;}catch(e){}
+    }
+  });
+}
+</script>
+</body>
+</html>
