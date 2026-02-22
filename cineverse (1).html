@@ -534,7 +534,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
               <button class="btn btn-gold btn-sm flex-1" onclick="createPartyRoom()">
                 <span data-i="createRoom">Create Room</span>
               </button>
-              <button class="btn btn-ghost btn-sm flex-1" onclick="openJoinModal()">
+              <button class="btn btn-ghost btn-sm flex-1" onclick="openModal('modalJoinRoom')">
                 <span data-i="joinRoom">Join Room</span>
               </button>
             </div>
@@ -832,6 +832,25 @@ function setActiveNav(name){
 window.addEventListener('scroll',()=>{
   document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
 });
+
+window.switchAuthTab = function(tab){
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
+  document.getElementById('formLogin').classList.toggle('hidden',tab!=='login');
+  document.getElementById('formRegister').classList.toggle('hidden',tab!=='register');
+  document.getElementById('authError').style.display='none';
+};
+
+// Stubs for module functions - overwritten once module loads
+// These prevent "not defined" errors if user interacts before module loads
+window.doLogin = window.doRegister = window.doLogout = function(){console.log('Loading...');};
+window.playHero = window.playContent = window.playEpisode = window.closePlayer = function(){};
+window.openDetailModal = window.playFromDetail = window.toggleWatchlist = function(){};
+window.markAsWatched = window.openPartyForContent = function(){};
+window.togglePartySidebar = window.createPartyRoom = window.joinPartyRoom = function(){};
+window.leavePartyRoom = window.copyRoomCode = window.sendChatMsg = function(){};
+window.toggleVoice = window.toggleMute = window.switchProfileTab = function(){};
+window.filterContent = window.refreshHero = window.renderHome = function(){};
 </script>
 
 <script type="module">
@@ -984,13 +1003,7 @@ const DEMO_CONTENT = [
 ];
 
 // ─── AUTH ──────────────────────────────────────────
-window.switchAuthTab = (tab)=>{
-  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
-  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
-  document.getElementById('formLogin').classList.toggle('hidden',tab!=='login');
-  document.getElementById('formRegister').classList.toggle('hidden',tab!=='register');
-  document.getElementById('authError').style.display='none';
-};
+// switchAuthTab moved to plain script
 
 window.doLogin = async()=>{
   const email=document.getElementById('loginEmail').value.trim();
